@@ -1,0 +1,1245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<meta name="description" content="We stress-test 8 open-weight VLMs on 9 multimodal benchmarks under different input conditions to ask how much each benchmark actually depends on the image, and propose per-instance metrics — Modality Differential, Caption Substitution, Null-Image Bias, Visual Dependence — to audit it." />
+<title>Seeing Is Not Reasoning: How VLMs and Their Benchmarks Lean on Text</title>
+
+<style>
+/* LaTeX (Computer Modern) math fonts — KaTeX faces, self-hosted via CDN */
+@font-face{
+  font-family:"KaTeX_Main";
+  src:url("https://cdn.jsdelivr.net/npm/katex/dist/fonts/KaTeX_Main-Regular.woff2") format("woff2");
+  font-weight:normal; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:"KaTeX_Math";
+  src:url("https://cdn.jsdelivr.net/npm/katex/dist/fonts/KaTeX_Math-Italic.woff2") format("woff2");
+  font-weight:normal; font-style:italic; font-display:swap;
+}
+:root{
+  --bg:        #ffffff;
+  --bg-soft:   #f6f7f9;
+  --ink:       #1d1d1f;
+  --ink-soft:  #4a4a4f;
+  --line:      #e7e8ec;
+  --accent:    #b9351a;
+  --accent-2:  #2c5d8c;
+  --good:      #1f7a4d;
+  --bad:       #b9351a;
+  --kbd:       #f1f2f4;
+  --code:      #2b2b30;
+  --hl:        #fff4c2;
+  --maxw:      760px;
+
+  /* Distill-style font stacks (system fonts, no web fonts) */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+  --font-math: "KaTeX_Main", "Latin Modern Roman", Georgia, "Times New Roman", serif;
+}
+
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:        #15151a;
+    --bg-soft:   #1d1d24;
+    --ink:       #ececef;
+    --ink-soft:  #b1b1b8;
+    --line:      #2a2a32;
+    --accent:    #ff7a55;
+    --accent-2:  #7fb6ee;
+    --good:      #6cd2a4;
+    --bad:       #ff8166;
+    --kbd:       #23232b;
+    --code:      #1a1a20;
+    --hl:        #5c4a18;
+  }
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);}
+body{
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing:antialiased;
+  text-rendering: optimizeLegibility;
+}
+a{color:var(--accent-2);text-decoration:underline;text-decoration-thickness:0.5px;text-underline-offset:3px;}
+a:hover{color:var(--accent);}
+
+/* ────── Layout ────── */
+header.site, main, footer.site{
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 22px;
+}
+header.site{padding-top:48px;padding-bottom:8px;}
+footer.site{
+  padding-top:40px;padding-bottom:80px;
+  color:var(--ink-soft);font-size:14px;
+  font-family:var(--font-sans);
+  border-top:1px solid var(--line);margin-top:64px;
+}
+nav.site{
+  font-family:var(--font-sans);
+  font-size:13px;letter-spacing:0.04em;text-transform:uppercase;
+  color:var(--ink-soft);
+  display:flex;gap:18px;align-items:center;
+  margin-bottom:32px;
+}
+nav.site .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block}
+nav.site a{color:inherit;text-decoration:none}
+nav.site a:hover{color:var(--accent)}
+
+/* ────── Hero ────── */
+.hero h1{
+  font-family:var(--font-sans);
+  font-weight:800;
+  font-size: clamp(34px, 5.2vw, 54px);
+  line-height: 1.07;
+  letter-spacing:-0.02em;
+  margin: 0 0 18px;
+}
+.hero .kicker{
+  font-family:var(--font-sans);
+  font-size:13px;
+  text-transform:uppercase;
+  letter-spacing:0.14em;
+  color:var(--accent);
+  font-weight:600;
+  margin-bottom:14px;
+}
+.hero .lede{
+  font-size: clamp(19px, 2.1vw, 22px);
+  color:var(--ink-soft);
+  margin: 0 0 26px;
+}
+.byline{
+  font-family:var(--font-sans);
+  font-size:12.5px;color:var(--ink-soft);
+  display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  padding:14px 0;margin-bottom:32px;
+}
+.byline .authors{white-space:nowrap}
+.byline strong{color:var(--ink);font-weight:600}
+.byline .sep{opacity:.4}
+.byline sup{font-size:0.62em;color:var(--accent);font-weight:600;vertical-align:super;line-height:0;padding-left:1px;}
+.byline .affils sup{color:var(--ink-soft);}
+
+/* ────── Article ────── */
+article{padding-top:8px}
+article h2{
+  font-family:var(--font-sans);
+  font-weight:700;
+  font-size: clamp(24px, 3vw, 32px);
+  letter-spacing:-0.01em;
+  line-height:1.2;
+  margin: 56px 0 8px;
+  scroll-margin-top: 24px;
+}
+article h2 .num{
+  color:var(--ink-soft);
+  margin-right:0.4em;font-weight:700;
+}
+article h3{
+  font-family:var(--font-sans);
+  font-weight:600;
+  font-size: 20px;
+  margin: 32px 0 4px;
+  scroll-margin-top: 24px;
+}
+article p{margin:14px 0}
+article ul,article ol{padding-left:1.4em}
+article li{margin:6px 0}
+
+article p code, li code, td code, th code{
+  font-family:var(--font-mono);
+  font-size:0.86em;
+  background:var(--kbd);
+  padding:1px 6px;border-radius:5px;
+}
+
+/* drop cap on the very first paragraph after lede */
+article > p.dropcap::first-letter{
+  font-family:var(--font-sans);
+  initial-letter: 3 2;
+  -webkit-initial-letter: 3 2;
+  font-weight:800;
+  color:var(--accent);
+  margin-right:6px;
+}
+
+/* highlight */
+mark{background:var(--hl);color:inherit;padding:0 2px;border-radius:3px}
+
+/* ────── Pull quote ────── */
+.pull{
+  margin: 36px -10px;
+  padding: 22px 28px;
+  border-left: 4px solid var(--accent);
+  background: var(--bg-soft);
+  border-radius: 0 12px 12px 0;
+  font-family:var(--font-sans);
+  font-size: 22px;
+  line-height: 1.45;
+  font-style: italic;
+  font-weight:500;
+  color:var(--ink);
+}
+
+/* ────── Callouts ────── */
+.callout{
+  margin: 28px 0;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  font-family:var(--font-sans);
+  font-size:15px;line-height:1.55;
+  color:var(--ink);
+  display:flex;gap:14px;
+}
+.callout .icon{font-size:22px;line-height:1;flex-shrink:0;margin-top:2px}
+.callout.warn{border-color:var(--accent);}
+.callout.warn .icon{color:var(--accent)}
+.callout strong{color:var(--ink)}
+.callout ol{margin:6px 0 0;padding-left:20px}
+.callout li{margin:7px 0}
+.callout .tldr-label{
+  text-transform:uppercase;letter-spacing:0.1em;font-size:12px;
+  font-weight:700;color:var(--accent);display:block;margin-bottom:4px;
+}
+
+/* ────── Tables ────── */
+.table-wrap{
+  margin:24px -10px;overflow-x:auto;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--bg-soft);
+}
+table{
+  border-collapse: collapse;
+  width:100%;
+  font-family:var(--font-sans);
+  font-size:13.5px;
+  line-height:1.4;
+}
+th,td{padding:9px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+th{
+  font-weight:600;color:var(--ink-soft);
+  text-transform:uppercase;letter-spacing:0.05em;font-size:11.5px;
+  background:var(--bg);
+  position:sticky;top:0;
+}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;font-variant-numeric: tabular-nums;font-family:var(--font-mono);font-size:13px}
+.pos{color:var(--good);font-weight:500}
+.neg{color:var(--bad);font-weight:500}
+.zero{color:var(--ink-soft)}
+caption{
+  caption-side:bottom;
+  font-family:var(--font-sans);
+  font-size:13px;color:var(--ink-soft);
+  text-align:left;padding:12px;line-height:1.5;
+}
+
+/* ────── Math ────── */
+.math{
+  position:relative;
+  display:block;
+  text-align:center;
+  margin: 30px 0;
+  padding: 6px 40px;
+  font-family:var(--font-math);
+  font-size:21px;
+  line-height:1.3;
+  color:var(--ink);
+  overflow-x:auto;
+  white-space:nowrap;
+}
+.math .q{ font-weight:normal; }                         /* defined quantity (LHS), upright */
+.math .fn{ font-style:normal; }                         /* function names: acc, mean (upright) */
+.math .var{ font-family:"KaTeX_Math","Latin Modern Roman",serif; font-style:italic; }  /* math variables: g, m */
+.math sub{
+  font-size:0.62em; font-style:normal; font-weight:normal;
+  color:var(--ink-soft); vertical-align:-0.32em; padding:0 0.5px;
+}
+.math .cond{ font-size:0.78em; font-style:normal; letter-spacing:0.01em; }  /* condition args */
+.math .op{ color:var(--ink-soft); margin:0 0.36em; }    /* = + − */
+.math .paren{ color:var(--ink-soft); }
+.math .eqno{
+  position:absolute; right:4px; top:50%; transform:translateY(-50%);
+  font-family:var(--font-mono); font-size:13px;
+  color:var(--ink-soft); opacity:.65; font-weight:400;
+}
+/* stacked fraction */
+.math .frac{
+  display:inline-flex; flex-direction:column; align-items:center;
+  vertical-align:middle; margin:0 0.3em;
+}
+.math .frac .top{ padding:0 0.7em 0.14em; }
+.math .frac .bot{ padding:0.14em 0.7em 0; border-top:1.6px solid var(--ink); }
+.math em{ font-family:"KaTeX_Math","Latin Modern Roman",serif; color:var(--accent); font-style:italic; font-weight:normal; }
+
+/* ────── Figures ────── */
+figure{margin:30px -10px}
+figure img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:12px;background:var(--bg-soft)}
+figcaption{
+  font-family:var(--font-sans);
+  font-size:13px;color:var(--ink-soft);
+  text-align:left;margin-top:10px;line-height:1.5;
+}
+
+/* ────── TOC ────── */
+.toc{
+  font-family:var(--font-sans);
+  font-size:14px;
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  padding: 14px 0; margin: 30px 0 8px;
+  color:var(--ink-soft);
+}
+.toc strong{color:var(--ink);font-weight:600;display:block;margin-bottom:6px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase}
+.toc ol{padding-left:22px;margin:0}
+.toc a{color:var(--ink);text-decoration:none}
+.toc a:hover{color:var(--accent);text-decoration:underline}
+
+/* ────── Fixed sidebar TOC (wide screens) ────── */
+.toc-rail{display:none;}
+@media (min-width: 1340px){
+  /* hide the inline TOC, show the fixed rail in the left gutter */
+  .toc-inline{display:none;}
+  .toc-rail{
+    display:block;
+    position:fixed;
+    top:96px;
+    left:calc(50% - 644px);
+    width:240px;
+    max-height:calc(100vh - 150px);
+    overflow-y:auto;
+    font-family:var(--font-sans);
+    font-size:14.5px;line-height:1.45;
+    color:var(--ink-soft);
+    padding-right:18px;
+    border-right:1px solid var(--line);
+  }
+  .toc-rail .toc-title{
+    color:var(--ink-soft);font-weight:600;
+    font-size:12px;letter-spacing:0.1em;text-transform:uppercase;
+    margin-bottom:16px;
+  }
+  .toc-rail ol{list-style:none;padding:0;margin:0;}
+  .toc-rail li{margin:0;}
+  .toc-rail a{
+    display:block;
+    color:var(--ink-soft);text-decoration:none;
+    padding:6px 0 6px 14px;
+    border-left:2px solid var(--line);
+    transition:color .15s ease,border-color .15s ease;
+  }
+  .toc-rail > ol > li > a{color:var(--ink);font-weight:600;}   /* section */
+  .toc-rail ol ol a{                                            /* subsection */
+    padding-left:26px;
+    font-size:13px;font-weight:400;color:var(--ink-soft);
+  }
+  .toc-rail a:hover{color:var(--ink);}
+  .toc-rail a.active{color:var(--ink);font-weight:600;border-left-color:var(--accent);}
+}
+
+hr.rule{border:none;border-top:1px solid var(--line);margin:48px 0}
+
+/* ────── BibTeX / citation block ────── */
+pre.bibtex{
+  margin:18px -10px 0;
+  padding:16px 18px;
+  background:var(--bg-soft);
+  border:1px solid var(--line);
+  border-radius:12px;
+  overflow-x:auto;
+  font-family:var(--font-mono);
+  font-size:13px; line-height:1.55;
+  color:var(--ink);
+  white-space:pre;
+  tab-size:2;
+}
+
+/* ────── Glossary term tooltips (auto-wrapped after §3) ────── */
+.term{
+  border-bottom:1px dotted var(--ink-soft);
+  cursor:help; position:relative;
+}
+.term:hover,.term:focus{color:var(--accent-2);outline:none;}
+.term .tip{
+  position:absolute; left:50%; bottom:calc(100% + 9px); transform:translateX(-50%);
+  width:max-content; max-width:min(360px,92vw);
+  background:var(--bg); color:var(--ink);
+  border:1px solid var(--line); border-radius:9px;
+  box-shadow:0 8px 26px rgba(0,0,0,.14);
+  padding:9px 13px; text-align:center;
+  opacity:0; visibility:hidden;
+  transition:opacity .12s ease; z-index:60; pointer-events:none;
+  font-weight:400; font-style:normal;
+}
+.term:hover .tip,.term:focus .tip,.term:focus-within .tip{opacity:1;visibility:visible;}
+.term .tip-name{
+  display:block; font-family:var(--font-sans);
+  font-size:10.5px; letter-spacing:.05em; text-transform:uppercase;
+  color:var(--ink-soft); margin-bottom:5px;
+}
+.term .tip-eq{
+  display:block; font-family:var(--font-math); font-size:15.5px; font-weight:normal;
+  color:var(--ink); white-space:nowrap;
+}
+.term .tip::after{
+  content:""; position:absolute; top:100%; left:50%; transform:translateX(-50%);
+  border:6px solid transparent; border-top-color:var(--bg);
+}
+
+/* ────── Context / chat windows (examples) ────── */
+.ctx-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  grid-template-rows:auto 1fr auto auto;   /* bar · input · question · answer */
+  gap:0 18px;
+  margin:26px -10px;
+}
+.ctx-window{
+  grid-row:1 / span 4;
+  display:grid;
+  grid-template-rows:subgrid;
+  min-width:0;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--bg);
+  overflow:hidden;
+}
+.ctx-bar{
+  display:flex;align-items:center;gap:7px;
+  padding:9px 13px;
+  background:var(--bg-soft);
+  border-bottom:1px solid var(--line);
+}
+.ctx-bar .dot{width:10px;height:10px;border-radius:50%;}
+.ctx-bar .dot.r{background:#e0685b}
+.ctx-bar .dot.y{background:#e3b341}
+.ctx-bar .dot.g{background:#5fb37a}
+.ctx-bar .ctx-title{
+  margin-left:6px;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--ink-soft);font-weight:600;
+}
+.ctx-turn{
+  padding:12px 14px;
+  display:flex;flex-direction:column;gap:6px;
+  font-family:var(--font-sans);font-size:14px;line-height:1.5;
+}
+.ctx-turn.answer-turn{border-top:1px solid var(--line);}
+.ctx-role{
+  font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--ink-soft);font-weight:600;
+}
+.ctx-img{display:block;width:100%;border-radius:10px;border:1px solid var(--line);}
+.bubble{
+  border-radius:12px;padding:9px 12px;
+  border:1px solid var(--line);
+  background:var(--bg-soft);
+}
+.bubble.caption{
+  max-height:248px;overflow-y:auto;
+  font-size:12.5px;line-height:1.55;color:var(--ink-soft);
+}
+.bubble.caption strong{color:var(--ink);font-weight:600;}
+.bubble.caption ol{margin:6px 0 0;padding-left:20px;}
+.bubble.caption li{margin:5px 0;}
+.bubble.caption p{margin:0 0 6px;}
+.bubble.q{background:var(--bg);border-style:dashed;}
+.bubble.answer{
+  display:flex;align-items:center;gap:9px;font-weight:500;color:var(--ink);
+  background:var(--bg);
+}
+.bubble.answer.ok{border-color:var(--good);}
+.bubble.answer.bad{border-color:var(--bad);}
+.bubble.answer .verdict{font-size:17px;font-weight:700;line-height:1;margin-left:auto;}
+.bubble.answer.ok .verdict{color:var(--good);}
+.bubble.answer.bad .verdict{color:var(--bad);}
+.ctx-cap{
+  font-family:var(--font-sans);
+  font-size:13px;line-height:1.5;color:var(--ink-soft);
+  margin:12px 0 0;
+}
+.ctx-cap strong{color:var(--ink);font-weight:600;}
+@media (max-width: 700px){
+  .ctx-grid{grid-template-columns:1fr;grid-template-rows:none;margin:22px 0;gap:18px;}
+  .ctx-window{grid-row:auto;display:flex;flex-direction:column;}
+}
+
+/* ────── Benchmark gallery (3 × 3 cards) ────── */
+.bench-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:14px;
+  margin:24px -10px;
+}
+.bench-card{
+  display:flex;flex-direction:column;min-width:0;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--bg);
+  overflow:hidden;
+}
+.bench-thumb{
+  aspect-ratio:4 / 3;width:100%;
+  object-fit:contain;object-position:center;display:block;
+  background:var(--bg-soft);
+  border-bottom:1px solid var(--line);
+}
+.bench-body{padding:9px 11px;display:flex;flex-direction:column;gap:4px;}
+.bench-name{
+  font-size:10.5px;letter-spacing:0.05em;text-transform:uppercase;
+  color:var(--accent);font-weight:700;
+}
+.bench-q{
+  font-size:12.5px;line-height:1.4;color:var(--ink);
+  display:-webkit-box;-webkit-line-clamp:3;line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+}
+@media (max-width: 640px){ .bench-grid{grid-template-columns:1fr 1fr;margin:20px 0;} }
+
+/* ────── small responsive tweaks ────── */
+@media (max-width: 640px){
+  body{font-size:18px}
+  header.site,main,footer.site{padding:0 18px}
+  .pull{margin:28px 0}
+  figure{margin:24px 0}
+  .table-wrap{margin:20px 0}
+  .math{margin:22px 0;padding:6px 14px;font-size:18px;text-align:left;white-space:normal}
+  .math .eqno{position:static;display:block;transform:none;text-align:right;margin-top:4px;}
+}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <nav class="site">
+    <span class="dot" aria-hidden="true"></span>
+    <span><strong style="color:var(--ink);font-weight:600">VLM Evaluation</strong></span>
+    <span style="opacity:.4">·</span>
+    <a href="#sec1">introduction</a>
+    <a href="#sec3">metrics</a>
+    <a href="#sec4">benchmarks</a>
+    <a href="#sec5">models</a>
+    <a href="#sec6">discussion</a>
+  </nav>
+
+  <div class="hero">
+    <div class="kicker">essay · vision-language models · evaluation</div>
+    <h1>Seeing Is Not Reasoning:<br>How VLMs and Their Benchmarks Lean on Text</h1>
+    <!-- AUTHOR ↔ AFFILIATION MAPPING: the <sup> numbers below are a placeholder guess. Adjust each author's superscript to match the numbered affiliation legend (1=UChicago, 2=USC, 3=Edinburgh, 4=MIT, 5=Stony Brook). Multiple affiliations: e.g. <sup>1,2</sup>. -->
+    <div class="byline">
+      <span class="authors"><strong>Harvey Yiyun Fu</strong><sup>1</sup>, <strong>Chenghao Yang</strong><sup>1</sup>, <strong>Ting-Yun Chang</strong><sup>2</sup>, <strong>Zhaowei Wang</strong><sup>3</sup>, <strong>Zhaofeng Wu</strong><sup>4</sup>, <strong>Jiawei Zhou</strong><sup>5</sup>, <strong>Deqing Fu</strong><sup>2</sup></span>
+      <span class="sep">·</span>
+      <span class="affils"><sup>1</sup>UChicago &middot; <sup>2</sup>USC &middot; <sup>3</sup>Edinburgh &middot; <sup>4</sup>MIT &middot; <sup>5</sup>Stony Brook</span>
+      <span class="sep">·</span>
+      <span>Jun 2026</span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc-rail" aria-label="Contents">
+  <div class="toc-title">Contents</div>
+  <ol>
+    <li><a href="#sec1">1&nbsp;&nbsp;Introduction</a></li>
+    <li><a href="#sec2">2&nbsp;&nbsp;Evaluation Configurations</a>
+      <ol>
+        <li><a href="#sec2-1">2.1&nbsp;&nbsp;Models</a></li>
+        <li><a href="#sec2-2">2.2&nbsp;&nbsp;Benchmarks</a></li>
+        <li><a href="#sec2-3">2.3&nbsp;&nbsp;Input conditions</a></li>
+        <li><a href="#sec2-4">2.4&nbsp;&nbsp;Scoring</a></li>
+      </ol>
+    </li>
+    <li><a href="#sec3">3&nbsp;&nbsp;Dimensions of Interpretation</a></li>
+    <li><a href="#sec4">4&nbsp;&nbsp;VQA benchmarks</a>
+      <ol>
+        <li><a href="#sec4-1">4.1&nbsp;&nbsp;Benchmark taxonomy</a></li>
+        <li><a href="#sec4-2">4.2&nbsp;&nbsp;Modality Differential</a></li>
+        <li><a href="#sec4-3">4.3&nbsp;&nbsp;Uninformative images</a></li>
+      </ol>
+    </li>
+    <li><a href="#sec5">5&nbsp;&nbsp;VLM evaluation</a>
+      <ol>
+        <li><a href="#sec5-1">5.1&nbsp;&nbsp;Visual dependence</a></li>
+        <li><a href="#sec5-2">5.2&nbsp;&nbsp;Modality differential</a></li>
+        <li><a href="#sec5-3">5.3&nbsp;&nbsp;InternVL3.5 on MMMU</a></li>
+        <li><a href="#sec5-4">5.4&nbsp;&nbsp;Null-Image Bias</a></li>
+      </ol>
+    </li>
+    <li><a href="#sec6">6&nbsp;&nbsp;Discussion</a></li>
+    <li><a href="#sec7">7&nbsp;&nbsp;Related Work</a></li>
+    <li><a href="#cite">Citation</a></li>
+  </ol>
+</nav>
+
+<main>
+<article>
+
+<div class="callout">
+  <span class="icon">📌</span>
+  <div>
+    <span class="tldr-label">TL;DR</span>
+    We stress-test 8 open-weight VLMs on 9 popular multimodal benchmarks under different input conditions to ask a simple question: <em>how much does each benchmark actually depend on the images themselves?</em>
+    <ol>
+      <li>In roughly a third of the (model &times; benchmark) pairs we tested, a model does as well or better when the image is replaced by a short text caption &mdash; many &ldquo;multimodal&rdquo; benchmarks barely depend on the image.</li>
+      <li>Image-dependence is a property of the model family more than its size. On MMMU, every InternVL3.5 model reasons better when its image is replaced by a text caption, while every Qwen3-VL model goes the other direction.</li>
+      <li>We propose the <strong>Modality Differential</strong>, a per-instance score bounded in <code>[-1, +1]</code> that audits whether a benchmark genuinely needs the image during reasoning, alongside three companion metrics &mdash; Caption Substitution, Null-Image Bias, and Visual Dependence.</li>
+      <li>Larger models become <em>less</em> vision-grounded as they accumulate text priors: raw accuracy overstates the visual capability of the biggest VLMs in our set.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="toc toc-inline">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#sec1">Introduction and Motivation</a></li>
+    <li><a href="#sec2">Evaluation Configurations</a></li>
+    <li><a href="#sec3">Dimensions of Interpretation</a></li>
+    <li><a href="#sec4">How Visual are VQA Benchmarks</a></li>
+    <li><a href="#sec5">VLM Capability Evaluation</a></li>
+    <li><a href="#sec6">Discussion</a></li>
+    <li><a href="#sec7">Related Work</a></li>
+    <li><a href="#cite">Citation</a></li>
+  </ol>
+</div>
+
+<hr class="rule">
+
+<!-- ════════════════════════ §1 ════════════════════════ -->
+<h2 id="sec1"><span class="num">1</span>Introduction and Motivation</h2>
+
+<p>In 2025, AI agents such as Claude Code and Codex were heavily integrated into daily use as they became capable of processing long-context inputs across different modalities. What to feed into the context window has since become not only a question of token expense but also an active area of research. High-resolution images, in particular, take up a large share of the token budget to encode. If they can be replaced with text captions, the savings on context length would be substantial. But doing so requires a prior that image captions alone can match the downstream performance of using the image as input.</p>
+
+<p>The architecture of widely used vision-language models (VLMs) suggests that this prior may hold. Recent VLMs such as InternVL3 and Qwen3-VL pair a pre-trained text-only LLM backbone with a vision encoder, and a growing body of work has questioned how much of a VLM&rsquo;s downstream capability is genuinely visual versus inherited from its backbone LM. Caption-then-answer pipelines such as <a href="https://arxiv.org/abs/2109.05014">PICa</a> and <a href="https://arxiv.org/abs/2212.10846">Img2LLM</a> showed early on that replacing the image with a generated caption and handing the result to a strong text LLM was already competitive on VQA. More recent benchmark audits have made the same point from the other direction: <a href="https://arxiv.org/abs/2403.20330"><strong>MMStar</strong></a> found that roughly half of the items in six widely used multimodal benchmarks can be answered without the image at all, and <a href="https://arxiv.org/abs/2404.01266"><strong>IsoBench</strong></a> showed that on isomorphic image/text pairs, VLMs systematically perform better when given the text version. <a href="https://arxiv.org/abs/2409.02813"><strong>MMMU-Pro</strong></a> was constructed specifically to filter out the text-solvable subset of MMMU. Closest to our setting, <a href="https://arxiv.org/abs/2603.21687"><strong>MIRAGE</strong></a> showed that frontier models will generate detailed image descriptions and reasoning traces even when no image is provided, achieving top rank on a chest X-ray QA benchmark without any visual input at all.</p>
+
+<p>In this post, we systematically evaluate 8 open-weight VLMs on 9 popular visual question answering (VQA) benchmarks under several input conditions. For instance, replacing the original image with a text caption. Here's an example:</p>
+
+<!-- Example A is illustrative but grounded in the real caption: the caption itself states the occluded object is "difficult to identify ... appears cylindrical or rounded," while the image shows a cube. To use a different scene, swap image_clevr_example.jpg and paste the matching entry from clevr_examples/captions.json, keeping its original formatting. -->
+<div class="ctx-grid">
+
+  <div class="ctx-window">
+    <div class="ctx-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="ctx-title">context &middot; with image</span></div>
+    <div class="ctx-turn">
+      <div class="ctx-role">Input</div>
+      <img class="ctx-img" src="image_clevr_example.jpg" alt="CLEVR scene: a green sphere at back left, a small yellow cube partly hidden behind a small cyan metal cube, and a large cyan cube on the right, on a neutral floor.">
+    </div>
+    <div class="ctx-turn">
+      <div class="ctx-role">Question</div>
+      <div class="bubble q">What is the shape of the small yellow object?</div>
+    </div>
+    <div class="ctx-turn answer-turn">
+      <div class="ctx-role">VLM</div>
+      <div class="bubble answer ok">A cube.<span class="verdict" aria-label="correct">&#10003;</span></div>
+    </div>
+  </div>
+
+  <div class="ctx-window">
+    <div class="ctx-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="ctx-title">context &middot; with caption (text-only)</span></div>
+    <div class="ctx-turn">
+      <div class="ctx-role">Input</div>
+      <div class="bubble caption">
+        <p>The image shows a 3D scene with four objects arranged on a plain, neutral background. Here&rsquo;s a detailed description of the objects:</p>
+        <ol>
+          <li><strong>Foreground:</strong> There is a large, turquoise cube prominently positioned towards the right side of the image. The cube has smooth, flat surfaces, reflective of a matte or semi-glossy finish, catching light softly.</li>
+          <li><strong>Midground:</strong> A smaller, shiny, cyan cube is situated slightly to the left and behind the larger turquoise cube. This cyan cube has a glossy surface, giving it a more reflective and metallic appearance.</li>
+          <li><strong>Background:</strong> Behind and to the left of the two cubes, there is a small, green sphere with a matte finish. Adjacent to the green sphere, there is a small, partial view of a yellow object. This object is mostly obscured, making it difficult to identify its exact shape, but <mark><strong>it appears cylindrical or rounded</strong></mark> based on the visible portion.</li>
+        </ol>
+        <p>The arrangement suggests a simple still life composition, with a focus on geometric shapes and basic colors. The lighting casts soft shadows, accentuating the spatial relationships between the objects.</p>
+      </div>
+    </div>
+    <div class="ctx-turn">
+      <div class="ctx-role">Question</div>
+      <div class="bubble q">What is the shape of the small yellow object?</div>
+    </div>
+    <div class="ctx-turn answer-turn">
+      <div class="ctx-role">VLM</div>
+      <div class="bubble answer bad">A cylinder.<span class="verdict" aria-label="incorrect">&#10007;</span></div>
+    </div>
+  </div>
+
+</div>
+
+<p class="ctx-cap"><strong>A sample question from CLEVR dataset.</strong> The default setting allows the VLM to take the original image as input (left), while under different cases a caption replaces the image (right). This caption is generated by InternVL3-14B.</p>
+
+<p>Comparing model performance across these input conditions tells us how much each benchmark actually depends on the image. If an image can be recovered by OCR and read as plain text, a strong backbone LLM can solve the task on its own, and such benchmarks may not do much to drive progress in multimodal reasoning. The same stress test also hints at how VLMs approach the task in the first place: are they more comfortable reasoning over text, and if so, do they effectively caption the image internally and then reason over that caption?</p>
+
+<hr class="rule">
+
+<!-- ════════════════════════ §2 ════════════════════════ -->
+<h2 id="sec2"><span class="num">2</span>Evaluation Configurations</h2>
+
+<p>To investigate the questions above, we ran a controlled stress test across 8 open-weight VLMs, 9 popular VQA benchmarks, and 6 input conditions per question.</p>
+
+<h3 id="sec2-1">2.1 &nbsp;Models</h3>
+<p>We evaluate three model families spanning sizes from 1B to 30B parameters:</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Family</th><th>Models</th></tr></thead>
+  <tbody>
+    <tr><td><strong>InternVL3</strong></td><td>InternVL3-1B, InternVL3-14B</td></tr>
+    <tr><td><strong>InternVL3.5</strong></td><td>InternVL3.5-1B, InternVL3.5-14B, InternVL3.5-30B-A3B</td></tr>
+    <tr><td><strong>Qwen3-VL</strong></td><td>Qwen3-VL-2B, Qwen3-VL-8B, Qwen3-VL-30B-A3B</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>All models are run at their default inference settings with a shared system prompt template.</p>
+
+<h3 id="sec2-2">2.2 &nbsp;Benchmarks</h3>
+<p>We cover nine widely used VQA benchmarks that span synthetic and real-world imagery, perception and reasoning, short-answer and multiple-choice formats:</p>
+
+<!-- 3x3 benchmark gallery: band-stripped thumbnail (bench/thumb/) + the real question as text.
+     Thumbnails are cover-cropped to 4:3; questions are from bench/meta.json (CLEVR is hand-written). -->
+<div class="bench-grid">
+
+  <div class="bench-card">
+    <img class="bench-thumb" src="bench/thumb/mmmu.jpg" alt="MMMU: an accounting cost-per-unit table.">
+    <div class="bench-body"><div class="bench-name">MMMU</div>
+    <div class="bench-q">Q: If 30,000 units are produced, what are the per-unit manufacturing overhead costs?</div></div>
+  </div>
+
+  <div class="bench-card">
+    <img class="bench-thumb" src="bench/thumb/worldvqa.jpg" alt="WorldVQA: a natural photo of a dog.">
+    <div class="bench-body"><div class="bench-name">WorldVQA</div>
+    <div class="bench-q">Q: What breed of dog is in the picture?</div></div>
+  </div>
+
+  <div class="bench-card">
+    <img class="bench-thumb" src="bench/thumb/clevr.jpg" alt="CLEVR: a synthetic 3-D scene of geometric shapes.">
+    <div class="bench-body"><div class="bench-name">CLEVR</div>
+    <div class="bench-q">Q: How many objects are either cubes or cylinders?</div></div>
+  </div>
+
+  <div class="bench-card">
+    <img class="bench-thumb" src="bench/thumb/countbench.jpg" alt="CountBench: a photo containing several headsets.">
+    <div class="bench-body"><div class="bench-name">CountBench</div>
+    <div class="bench-q">Q: How many headsets are there in the image?</div></div>
+  </div>
+
+  <div class="bench-card">
+    <img class="bench-thumb" src="bench/thumb/infovqa.jpg" alt="InfoVQA: a social-media platform infographic.">
+    <div class="bench-body"><div class="bench-name">InfoVQA</div>
+    <div class="bench-q">Q: Which social platform has a heavily female audience?</div></div>
+  </div>
+
+  <div class="bench-card">
+    <img class="bench-thumb" src="bench/thumb/realworldqa.jpg" alt="RealWorldQA: a real-world photo of three objects.">
+    <div class="bench-body"><div class="bench-name">RealWorldQA</div>
+    <div class="bench-q">Q: Which of the three objects is the smallest?</div></div>
+  </div>
+
+  <div class="bench-card">
+    <img class="bench-thumb" src="bench/thumb/refcoco.jpg" alt="RefCOCO: a photo with a red box around one region.">
+    <div class="bench-body"><div class="bench-name">RefCOCO</div>
+    <div class="bench-q">Q: Write a caption for the circled (red) region.</div></div>
+  </div>
+
+  <div class="bench-card">
+    <img class="bench-thumb" src="bench/thumb/sparkle_static.jpg" alt="SPARKLE-Static: a synthetic scene of labelled nodes.">
+    <div class="bench-body"><div class="bench-name">SPARKLE-Static</div>
+    <div class="bench-q">Q: Which distance is the shortest: N4&ndash;N5, N4&ndash;N2, or N5&ndash;N2?</div></div>
+  </div>
+
+  <div class="bench-card">
+    <img class="bench-thumb" src="bench/thumb/sparkle_tsp.jpg" alt="SPARKLE-TSP: a synthetic scene of objects to be toured.">
+    <div class="bench-body"><div class="bench-name">SPARKLE-TSP</div>
+    <div class="bench-q">Q: Find the shortest path that visits every object exactly once.</div></div>
+  </div>
+
+</div>
+
+<h3 id="sec2-3">2.3 &nbsp;Input conditions</h3>
+<p>For every (model, question) pair we record the model&rsquo;s answer under six input conditions. The first three vary the <em>type</em> of visual evidence the model is given; the last three are null-input controls that establish what the model can do without genuine visual information.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Condition</th><th>What the model sees</th><th>Why we run it</th></tr></thead>
+  <tbody>
+    <tr><td><code>original</code></td><td>the actual image + the question</td><td>benchmark-as-intended</td></tr>
+    <tr><td><code>injected_caption</code></td><td>a short text caption generated by InternVL3-14B, in place of the image</td><td>text-only with an honest visual proxy</td></tr>
+    <tr><td><code>self_caption</code></td><td>the models generate their own captions, in place of the image</td><td>the model captioning itself</td></tr>
+    <tr><td><code>no_images</code></td><td>no image at all, question only</td><td>pure prior baseline</td></tr>
+    <tr><td><code>white</code></td><td>a blank white image + the question</td><td>null-input with a visual <em>format</em> signal</td></tr>
+    <tr><td><code>noise</code></td><td>a random-noise image + the question</td><td>null-input with an alternative visual format signal</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The three null-input conditions (<code>no_images</code>, <code>white</code>, <code>noise</code>) are averaged into a single <strong>baseline</strong> in the analyses. Keeping them as separate columns also lets us check whether an uninformative image changes model behavior at all relative to receiving no image.</p>
+
+<h3 id="sec2-4">2.4 &nbsp;Scoring</h3>
+<p>Rule-based metrics such as ANLS, BLEU, and exact match break down for modern VLMs: models like Qwen3-VL generate long reasoning traces by default, and string-overlap scores reward surface-level wording rather than correctness. We therefore use <strong>LLM-as-judge</strong> for every cell. As the primary judge across the full sweep, we use <code>Qwen/Qwen3-30B-A3B-Instruct-2507</code> due to cost concerns. To validate the judge itself, we re-scored a stratified subset of cells with <code>gpt-5-mini</code> and found roughly 97% agreement with the Qwen judge.</p>
+
+<!-- ─────── Draft detour (commented out in source; preserved, not displayed) ───────
+Before we get to the headline finding, we have to take a detour. You cannot trust the headline finding without it.
+
+The first benchmark we wanted to run cleanly was InfoVQA — document VQA with infographic-style images. The standard metric is ANLS (Average Normalized Levenshtein Similarity).
+
+It looked fine on the surface:
+  Original VLM            ANLS ~71%
+  Caption-only baseline   ANLS ~33%
+
+Story over, image wins, write the paper.
+
+Except… we got curious. We re-ran the same questions feeding the model a blank white image. The ANLS score barely moved.
+  The control — InfoVQA, white-image: ANLS = 71.3%, LLM-judged accuracy = 18.5%.
+  The metric was rewarding the model for emitting the right kind of words, regardless of whether they answered the question.
+
+Rule-based metrics on long-form answers are noise generators above a certain reference length. ANLS in this regime is closer to a vocabulary-overlap detector than to a correctness metric.
+
+This is not InfoVQA-specific. It is a property of every benchmark in 2026 whose answers are longer than a multiple-choice letter:
+  BLEU / ROUGE — captioning, free-form answers — rewards token overlap, punishes paraphrase, blind to factuality.
+  Exact match — extractive QA after string normalization — brittle to format/spacing/punctuation.
+  ANLS — InfoVQA, DocVQA — reads as "edit distance to gold," behaves as "vocabulary overlap with the document."
+  n-gram match for grounding — RefCOCO-style outputs — noisier than LLM-as-judge by a wide margin in our runs.
+
+If your metric assigns 71% to a model that cannot see the image, your metric is not telling you about visual reasoning. It is telling you about your tokenizer.
+──────────────────────────────────────────────────────────────────────────────── -->
+
+<hr class="rule">
+
+<!-- ════════════════════════ §3 ════════════════════════ -->
+<h2 id="sec3"><span class="num">3</span>Dimensions of Interpretation</h2>
+
+<p>Accuracy on a VQA benchmark records whether a model answered correctly, but not what it answered correctly <em>from</em>, whether it is from the image, the wording of the question, or knowledge already present in the backbone LM. Before we report results, we want a few metrics that distinguish these cases.</p>
+
+<p>We treat the three null-input conditions as noisy estimates of the same underlying quantity: the accuracy the model reaches without genuine visual evidence. Their average gives a per-instance baseline,</p>
+
+<div class="math">
+  <span class="q">baseline</span><sub>i</sub>
+  <span class="op">=</span>
+  <span class="frac"><span class="top">1</span><span class="bot">3</span></span>
+  <span class="paren">(</span>
+  <span class="fn">acc</span><span class="paren">(</span><span class="cond">no_images</span><span class="paren">)</span><sub>i</sub>
+  <span class="op">+</span>
+  <span class="fn">acc</span><span class="paren">(</span><span class="cond">white</span><span class="paren">)</span><sub>i</sub>
+  <span class="op">+</span>
+  <span class="fn">acc</span><span class="paren">(</span><span class="cond">noise</span><span class="paren">)</span><sub>i</sub>
+  <span class="paren">)</span>
+  <span class="eqno">(1)</span>
+</div>
+
+<p>and every other condition is read relative to it. For a modality <code>m &isin; {original, injected_caption, self_caption}</code>, the modality gain is</p>
+
+<div class="math">
+  <span class="var">g</span><sub>m,i</sub>
+  <span class="op">=</span>
+  <span class="fn">acc</span><span class="paren">(</span><span class="var">m</span><span class="paren">)</span><sub>i</sub>
+  <span class="op">&minus;</span>
+  <span class="q">baseline</span><sub>i</sub>
+  <span class="eqno">(2)</span>
+</div>
+
+<p>A positive value means input <code>m</code> helped the model on instance <code>i</code>; a negative value means the input hurt relative to receiving no useful visual information at all. Averaged over instances, <code>g_image</code> and <code>g_caption</code> are the image gain and caption gain at the benchmark level.</p>
+
+<h3>Modality Differential</h3>
+<p>To compare image gain and caption gain on the same instance, we define the Modality Differential as</p>
+
+<div class="math">
+  <span class="q">Modality Differential</span><sub>i</sub>
+  <span class="op">=</span>
+  <span class="frac">
+    <span class="top"><span class="var">g</span><sub>image,i</sub> <span class="op">&minus;</span> <span class="var">g</span><sub>caption,i</sub></span>
+    <span class="bot"><span class="paren">|</span><span class="var">g</span><sub>image,i</sub><span class="paren">|</span> <span class="op">+</span> <span class="paren">|</span><span class="var">g</span><sub>caption,i</sub><span class="paren">|</span></span>
+  </span>
+  <span class="eqno">(3)</span>
+</div>
+
+<p>The score is bounded in <code>[&minus;1, +1]</code>. A value near <code>+1</code> means the image lifts accuracy on this instance and the caption does not. This indicates that the answer depends on something visual that a short text description does not preserve. A value near <code>&minus;1</code> means the opposite, that the caption already delivers abundant information while adding the image either does nothing or interferes. A value near <code>0</code> means the two inputs are roughly interchangeable for this question.</p>
+
+<p>Since §2 defines two caption conditions, the Modality Differential takes two forms. Substituting <code>g_injected_caption</code> for the caption term gives the <strong>injected Modality Differential</strong>, which measures image reliance against a clean text description written by a separate model. Substituting <code>g_self_caption</code> gives the <strong>self Modality Differential</strong>, which measures image reliance against the model&rsquo;s own description of the image. The gap between the two isolates the captioning phase, for cases where models can reason well once given the information but struggle to extract it from the image themselves.</p>
+
+<p>A note on naming: the per-instance score above is unrelated to <a href="https://arxiv.org/abs/2603.21687">MIRAGE: The Illusion of Visual Understanding (Asadi et al., 2026)</a>, which uses the term &ldquo;mirage reasoning&rdquo; for a different phenomenon &mdash; multimodal models generating detailed visual descriptions when no image is present in the prompt. Both works diagnose problems with current multimodal evaluation, but from different angles: theirs documents hallucination in the absence of an image, ours quantifies image-vs-caption reliance when an image is present.</p>
+
+<h3>Derived Quantities</h3>
+<p>Based on the metrics above, there are a few aggregations of them that we think are informative to look at.</p>
+
+<p>The <strong>Caption Substitution</strong> of a (model, benchmark) cell is</p>
+
+<div class="math">
+  <span class="q">Caption Substitution</span>
+  <span class="op">=</span>
+  <span class="frac">
+    <span class="top"><span class="fn">mean</span><span class="paren">(</span><span class="var">g</span><sub>caption</sub><span class="paren">)</span></span>
+    <span class="bot"><span class="fn">mean</span><span class="paren">(</span><span class="var">g</span><sub>image</sub><span class="paren">)</span></span>
+  </span>
+  <span class="eqno">(4)</span>
+</div>
+
+<p>a unitless ratio describing what fraction of the model&rsquo;s visual gain a caption recovers. A value near <code>0</code> indicates an irreducibly visual benchmark; near <code>1</code> indicates that a caption recovers as much accuracy as the image; greater than <code>1</code> indicates that the caption outperforms the image.</p>
+
+<p>The <strong>Null-Image Bias</strong> isolates the behavior of null-but-present visual inputs:</p>
+
+<div class="math">
+  <span class="q">Null-Image Bias</span>
+  <span class="op">=</span>
+  <span class="frac"><span class="top">1</span><span class="bot">2</span></span>
+  <span class="paren">(</span>
+  <span class="fn">acc</span><span class="paren">(</span><span class="cond">white</span><span class="paren">)</span>
+  <span class="op">+</span>
+  <span class="fn">acc</span><span class="paren">(</span><span class="cond">noise</span><span class="paren">)</span>
+  <span class="paren">)</span>
+  <span class="op">&minus;</span>
+  <span class="fn">acc</span><span class="paren">(</span><span class="cond">no_images</span><span class="paren">)</span>
+  <span class="eqno">(5)</span>
+</div>
+
+<p>If a model treated uninformative pixels as a clean absence of information, Null-Image Bias would be zero. In practice it is usually not, and its sign tells us whether fake images help (the visual stream is acting as a format cue) or hurt (it is hijacking attention).</p>
+
+<p>Lastly, the <strong>Visual Dependence</strong> of a model is</p>
+
+<div class="math">
+  <span class="q">Visual Dependence</span>
+  <span class="op">=</span>
+  <span class="frac">
+    <span class="top"><span class="fn">acc</span><span class="paren">(</span><span class="cond">original</span><span class="paren">)</span> <span class="op">&minus;</span> <span class="fn">acc</span><span class="paren">(</span><span class="cond">no_images</span><span class="paren">)</span></span>
+    <span class="bot"><span class="fn">acc</span><span class="paren">(</span><span class="cond">original</span><span class="paren">)</span></span>
+  </span>
+  <span class="eqno">(6)</span>
+</div>
+
+<p>the fraction of a model&rsquo;s correct answers that required the image. Visual Dependence is bounded in <code>(&minus;&infin;, 1]</code> (typically <code>[0, 1]</code>) and is scale-free, which makes it suitable for comparing models of different sizes on the same benchmark.</p>
+
+<p>Modality Differential, Caption Substitution, Null-Image Bias, and Visual Dependence are the four quantities that we use to interpret behaviors of VLMs when processing different modalities.</p>
+
+<!-- ─────── Draft "LLM-as-judge: necessary, but verify it" section (commented out in source; preserved, not displayed) ───────
+Once we'd burned ourselves on ANLS, we did the obvious thing: switch to LLM-as-judge. We used both an open-weight local judge and a strong frontier model (GPT-class) as a cross-check.
+
+Practical judge-trust recipe — for every (model, dataset, mode) cell, log: local-judge score, frontier-judge score, their Cohen's κ, SEM over ≥3 runs. If κ < 0.5, go look at the outputs by hand.
+- Cross-judge agreement caught the cases where a local judge was too generous (typical) or too conservative (rare).
+- Null-input sanity checks: feed the judge a model that received a white image; if it still hands out 70%, the judge (or benchmark) is rewarding the wrong thing.
+- Multiple runs with SEM: a 1.5-point gap on a single run is not a finding.
+──────────────────────────────────────────────────────────────────────────────── -->
+
+<hr class="rule">
+
+<!-- ════════════════════════ §4 ════════════════════════ -->
+<h2 id="sec4"><span class="num">4</span>How Visual are VQA benchmarks</h2>
+
+<p>We now apply the four quantities (Modality Differential, Caption Substitution, Null-Image Bias, and Visual Dependence) defined in §3 to the evalution results we got from the sweep in §2.</p>
+
+<h3 id="sec4-1">4.1 &nbsp;Benchmarks differ sharply in how much they depend on the image</h3>
+
+<p>We plot each benchmark&rsquo;s Image Contribution against its Caption Substitution, with all numbers averaged across the eight models.</p>
+
+<figure id="fig1">
+  <img src="fig1_dataset_taxonomy.png" alt="Dataset taxonomy: image contribution vs caption substitutability" />
+  <figcaption><em>Figure 1. Benchmark taxonomy: image contribution vs Caption Substitution. Each point is one benchmark, averaged across the 8 open-weight VLMs. X-axis: image contribution. Y-axis: Caption Substitution. The dashed line at <code>y = 1</code> separates benchmarks where captions partially substitute for the image (below) from those where captions outperform the image (above).</em></figcaption>
+</figure>
+
+<p>Two patterns stand out. Along the <strong>Caption Substitution</strong> axis, six of the nine benchmarks (MMMU, WorldVQA, CountBench, InfoVQA, RefCOCO, and SPARKLE-Static) have a Caption Substitution value of roughly 0.85 or higher, meaning that a static caption recovers most or all of the model&rsquo;s image gain. The effect is largest on MMMU, where the value of 1.72 reflects captions outperforming the original image by 2.8%. Along the <strong>Image Contribution</strong> axis, four benchmarks (RealWorldQA (&minus;0.6%), SPARKLE-TSP (+2.5%), MMMU (+3.9%), and WorldVQA (+6.4%)) show negligible improvement over a no-image baseline. These observations are consistent with prior work such as <a href="https://arxiv.org/abs/2403.20330">MMStar</a> and <a href="https://arxiv.org/abs/2603.21687">MIRAGE</a>.</p>
+
+<p>We take a useful multimodal benchmark to be one whose Image Contribution is non-trivially positive: if accuracy does not rise when the image is provided, then a model&rsquo;s correct answers cannot be credited to visual reasoning in the first place. Among the benchmarks that pass this bar, Caption Substitution then the types of visual content being tested. Tasks that lean on relational or spatial structure, where short text descriptions cannot disambiguate the referent, such as CLEVR (Caption Substitution = 0.51). On the other hand, tasks whose images are text-heavy or contain content that captions can loselessly transcribe, such as text as in CountBench, InfoVQA, and RefCOCO (all near 0.87&ndash;0.88), we observe that the performances are nearly identical.</p>
+
+<h3 id="sec4-2">4.2 &nbsp;Per-benchmark Modality Differential</h3>
+
+<p>Modality Differential collapses the two axes of <a href="#fig1">Figure 1</a> into a single bounded number per benchmark. When both image and caption gains are clearly positive, it reduces algebraically to <code>(1 &minus; CS) / (1 + CS)</code>, which is a monotonic remapping of Caption Substitution alone. When either gain is small or noisy, the per-instance average decays toward zero rather than diverging like the ratio. The net effect is that Modality Differential reads <a href="#fig1">Figure 1</a> along a rough diagonal from bottom-right (large image contribution; captions fail to recover it) to top-left (small image contribution; captions match or exceed it). A high value therefore signals two things at once: that the image is contributing meaningfully <em>and</em> that captions fail to substitute for it.</p>
+
+<figure id="fig-md">
+  <svg viewBox="0 0 720 204" role="img" aria-label="Per-benchmark Modality Differential on a number line from caption-leaning (left) to image-leaning (right)." style="width:100%;height:auto;font-family:var(--font-sans)">
+  <line x1="42.0" y1="30" x2="42.0" y2="182" stroke="var(--line)" stroke-width="1"/>
+  <line x1="360.0" y1="30" x2="360.0" y2="182" stroke="var(--line)" stroke-width="1"/>
+  <line x1="519.0" y1="30" x2="519.0" y2="182" stroke="var(--line)" stroke-width="1"/>
+  <line x1="678.0" y1="30" x2="678.0" y2="182" stroke="var(--line)" stroke-width="1"/>
+  <line x1="201.0" y1="30" x2="201.0" y2="182" stroke="var(--ink-soft)" stroke-width="1" stroke-dasharray="2 4" opacity="0.45"/>
+  <text x="201.0" y="24" text-anchor="middle" font-size="10" fill="var(--ink-soft)">parity</text>
+  <line x1="42.0" y1="112" x2="678.0" y2="112" stroke="var(--ink-soft)" stroke-width="1.25"/>
+  <path d="M678.0 112 l-6 -3.5 v7 z" fill="var(--ink-soft)"/>
+  <path d="M42.0 112 l6 -3.5 v7 z" fill="var(--ink-soft)"/>
+  <line x1="42.0" y1="108" x2="42.0" y2="116" stroke="var(--ink-soft)" stroke-width="1"/>
+  <text x="42.0" y="131" text-anchor="middle" font-size="10" fill="var(--ink-soft)">-0.1</text>
+  <line x1="201.0" y1="108" x2="201.0" y2="116" stroke="var(--ink-soft)" stroke-width="1"/>
+  <text x="201.0" y="131" text-anchor="middle" font-size="10" fill="var(--ink-soft)">0</text>
+  <line x1="360.0" y1="108" x2="360.0" y2="116" stroke="var(--ink-soft)" stroke-width="1"/>
+  <text x="360.0" y="131" text-anchor="middle" font-size="10" fill="var(--ink-soft)">+0.1</text>
+  <line x1="519.0" y1="108" x2="519.0" y2="116" stroke="var(--ink-soft)" stroke-width="1"/>
+  <text x="519.0" y="131" text-anchor="middle" font-size="10" fill="var(--ink-soft)">+0.2</text>
+  <line x1="678.0" y1="108" x2="678.0" y2="116" stroke="var(--ink-soft)" stroke-width="1"/>
+  <text x="678.0" y="131" text-anchor="middle" font-size="10" fill="var(--ink-soft)">+0.3</text>
+  <line x1="598.5" y1="107.0" x2="598.5" y2="69" stroke="#C44E52" stroke-width="1.6" opacity="0.65"/>
+  <circle cx="598.5" cy="112" r="5.5" fill="#C44E52" stroke="var(--bg)" stroke-width="1.5"/>
+  <text x="598.5" y="64" text-anchor="middle" font-size="12.5" fill="var(--ink)">CLEVR</text>
+  <line x1="360.0" y1="117.0" x2="360.0" y2="136" stroke="#E07B54" stroke-width="1.6" opacity="0.65"/>
+  <circle cx="360.0" cy="112" r="5.5" fill="#E07B54" stroke="var(--bg)" stroke-width="1.5"/>
+  <text x="360.0" y="146" text-anchor="middle" font-size="12.5" fill="var(--ink)">RefCOCO</text>
+  <line x1="328.2" y1="107.0" x2="328.2" y2="93" stroke="#8172B2" stroke-width="1.6" opacity="0.65"/>
+  <circle cx="328.2" cy="112" r="5.5" fill="#8172B2" stroke="var(--bg)" stroke-width="1.5"/>
+  <text x="328.2" y="88" text-anchor="middle" font-size="12.5" fill="var(--ink)">CountBench</text>
+  <line x1="296.4" y1="117.0" x2="296.4" y2="160" stroke="#CCB974" stroke-width="1.6" opacity="0.65"/>
+  <circle cx="296.4" cy="112" r="5.5" fill="#CCB974" stroke="var(--bg)" stroke-width="1.5"/>
+  <text x="296.4" y="170" text-anchor="middle" font-size="12.5" fill="var(--ink)">InfoVQA</text>
+  <line x1="228.8" y1="117.0" x2="228.8" y2="136" stroke="#64B5CD" stroke-width="1.6" opacity="0.65"/>
+  <circle cx="228.8" cy="112" r="5.5" fill="#64B5CD" stroke="var(--bg)" stroke-width="1.5"/>
+  <text x="236.8" y="146" text-anchor="middle" font-size="12.5" fill="var(--ink)">RealWorldQA</text>
+  <line x1="201.0" y1="107.0" x2="201.0" y2="69" stroke="#55A868" stroke-width="1.6" opacity="0.65"/>
+  <circle cx="201.0" cy="112" r="5.5" fill="#55A868" stroke="var(--bg)" stroke-width="1.5"/>
+  <text x="201.0" y="64" text-anchor="middle" font-size="12.5" fill="var(--ink)">WorldVQA</text>
+  <line x1="169.2" y1="117.0" x2="169.2" y2="136" stroke="#76b7b2" stroke-width="1.6" opacity="0.65"/>
+  <circle cx="169.2" cy="112" r="5.5" fill="#76b7b2" stroke="var(--bg)" stroke-width="1.5"/>
+  <text x="141.2" y="146" text-anchor="middle" font-size="12.5" fill="var(--ink)">SPARKLE-Static</text>
+  <line x1="236.8" y1="107.0" x2="236.8" y2="45" stroke="#b07aa1" stroke-width="1.6" opacity="0.65"/>
+  <circle cx="236.8" cy="112" r="5.5" fill="#b07aa1" stroke="var(--bg)" stroke-width="1.5"/>
+  <text x="252.8" y="40" text-anchor="middle" font-size="12.5" fill="var(--ink)">SPARKLE-TSP</text>
+  <line x1="153.3" y1="107.0" x2="153.3" y2="93" stroke="#4C72B0" stroke-width="1.6" opacity="0.65"/>
+  <circle cx="153.3" cy="112" r="5.5" fill="#4C72B0" stroke="var(--bg)" stroke-width="1.5"/>
+  <text x="137.3" y="88" text-anchor="middle" font-size="12.5" fill="var(--ink)">MMMU</text>
+  <text x="42.0" y="198" text-anchor="start" font-size="10.5" font-style="italic" fill="var(--ink-soft)">← caption-leaning</text>
+  <text x="678.0" y="198" text-anchor="end" font-size="10.5" font-style="italic" fill="var(--ink-soft)">image-leaning →</text>
+  </svg>
+  <figcaption><em>Per-benchmark Modality Differential, averaged across the 8 open-weight VLMs (colors match Figure 1). Each benchmark is placed on the scale by its value: left of zero is caption-leaning (caption gain exceeds image gain), right is image-leaning, and points near zero indicate parity or that neither modality contributes much over the baseline.</em></figcaption>
+</figure>
+
+<h3 id="sec4-3">4.3 &nbsp;Uninformative images change model behavior</h3>
+
+<p>Null-Image Bias asks whether a blank-white or random-noise image behaves like a true absence of visual evidence. In ideal cases it would, since an uninformative image should leave the model in the same state as receiving no image at all.</p>
+
+<figure id="fig2">
+  <img src="fig3_phantom_vision.png" alt="Null-Image Bias per benchmark" />
+  <figcaption><em>Figure 2. Null-Image Bias by benchmark. Each bar is <code>½(acc(white) + acc(noise)) &minus; acc(no_images)</code>, averaged across the 8 VLMs and reported in percent. Bars below zero indicate that an uninformative image hurts relative to no image at all; bars above zero indicate that it helps.</em></figcaption>
+</figure>
+
+<p>Across most benchmarks, an uninformative image hurts model performance, as expected. On RealWorldQA and CLEVR, however, a white or pure-noise image improves accuracy. This suggests that these benchmarks either leak more information through question phrasing than through the image, or that their answers are already memorized by the models.</p>
+
+<hr class="rule">
+
+<!-- ════════════════════════ §5 ════════════════════════ -->
+<h2 id="sec5"><span class="num">5</span>VLM Capability Evaluation</h2>
+
+<p>§4 read the four metrics one benchmark at a time. The same quantities, aggregated the other way &mdash; per model, averaged across the 9 benchmarks &mdash; describe how each VLM in our set processes its inputs. We add one extra subsection comparing the model&rsquo;s own caption (<code>self_caption</code>) against an externally injected one (<code>injected_caption</code>), since this is naturally a per-model diagnostic.</p>
+
+<h3 id="sec5-1">5.1 &nbsp;Visual Dependence drops with model scale</h3>
+
+<p>We measure the Visual Dependence across all eight models averaged over all benchmarks.</p>
+
+<figure id="fig4">
+  <img src="fig7_vge_models.png" alt="Visual Dependence by model" />
+  <figcaption><em>Figure 4. Visual Dependence by model. <code>Visual Dependence = (acc(original) &minus; acc(no_images)) / acc(original)</code>, computed per model and averaged across the 9 benchmarks. Higher values indicate that a larger share of the model&rsquo;s correct answers required the image.</em></figcaption>
+</figure>
+
+<p>Visual Dependence is varies between 68% and 75% across all eight models. There&rsquo;s a trend that it scales inversely with model scale, dropping from 73-74% for 1B and 2B models to 68-70% for 30B variants. We hypothesize that this is because larger models have a larger LLM backbone, which resolves a larger share of questions from world knowledge alone, leaving a smaller residual share for the image to actually contribute to.</p>
+
+<h3 id="sec5-2">5.2 &nbsp;The image-vs-caption lean is family-specific</h3>
+
+<p>Aggregating Modality Differential and Caption Substitution across the 9 benchmarks gives a single number per model alone each axis. They separate the two VLM model family.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Model</th><th class="num">mean Modality Differential</th><th class="num">mean Caption Substitution</th></tr></thead>
+  <tbody>
+    <tr><td>InternVL3.5-1B</td><td class="num neg"><strong>&minus;0.04</strong></td><td class="num"><strong>1.16</strong></td></tr>
+    <tr><td>InternVL3.5-30B-A3B</td><td class="num pos">+0.01</td><td class="num">0.97</td></tr>
+    <tr><td>InternVL3.5-14B</td><td class="num pos">+0.03</td><td class="num">0.91</td></tr>
+    <tr><td>InternVL3-14B</td><td class="num pos">+0.03</td><td class="num">0.91</td></tr>
+    <tr><td>InternVL3-1B</td><td class="num pos">+0.05</td><td class="num">0.83</td></tr>
+    <tr><td>Qwen3-VL-2B</td><td class="num pos">+0.07</td><td class="num">0.81</td></tr>
+    <tr><td>Qwen3-VL-30B-A3B</td><td class="num pos">+0.10</td><td class="num">0.76</td></tr>
+    <tr><td>Qwen3-VL-8B</td><td class="num pos"><strong>+0.10</strong></td><td class="num"><strong>0.75</strong></td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>In terms of Modality Differential and Caption Substitution, three model families show a clear trend. Modality Differential and Caption Substituion scales inversely, since [&hellip;]. The Qwen3-VL family turns out to be most image-leaning while InternVL3.5 being the least. This suggests that VLM architecture and pre-training decisions may matter more than scaling for how models treat image versus caption inputs.</p>
+
+<h3 id="sec5-3">5.3 &nbsp;Case study: when text beats the image (InternVL3.5 on MMMU)</h3>
+
+<p>Consistent with having highest Caption Substitution, InternVL3.5 models reasons much better from text than from pixels on MMMU.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Model</th><th class="num">acc(original)</th><th class="num">Δ(self&minus;orig)</th><th class="num">Δ(inj&minus;orig)</th></tr></thead>
+  <tbody>
+    <tr><td>InternVL3.5-30B-A3B</td><td class="num">45.3</td><td class="num pos"><strong>+12.2</strong></td><td class="num pos"><strong>+11.9</strong></td></tr>
+    <tr><td>InternVL3.5-14B</td><td class="num">48.6</td><td class="num pos"><strong>+10.6</strong></td><td class="num pos"><strong>+9.3</strong></td></tr>
+    <tr><td>InternVL3.5-1B</td><td class="num">27.3</td><td class="num pos"><strong>+10.0</strong></td><td class="num pos"><strong>+12.4</strong></td></tr>
+    <tr><td>InternVL3-1B</td><td class="num">34.4</td><td class="num pos">+1.3</td><td class="num neg">&minus;0.6</td></tr>
+    <tr><td>Qwen3-VL-2B</td><td class="num">44.8</td><td class="num neg">&minus;2.3</td><td class="num neg">&minus;0.6</td></tr>
+    <tr><td>Qwen3-VL-8B</td><td class="num">56.2</td><td class="num neg">&minus;2.6</td><td class="num neg">&minus;2.8</td></tr>
+    <tr><td>Qwen3-VL-30B-A3B</td><td class="num">58.0</td><td class="num neg">&minus;4.3</td><td class="num neg">&minus;3.0</td></tr>
+    <tr><td>InternVL3-14B</td><td class="num">57.4</td><td class="num neg">&minus;4.3</td><td class="num neg">&minus;4.3</td></tr>
+  </tbody>
+  <caption><em>MMMU accuracy change when the image is replaced by a caption, relative to the original image (percentage points). Δ(self&minus;orig) uses the model&rsquo;s own caption; Δ(inj&minus;orig) uses an external InternVL3-14B caption. For InternVL3-14B itself the two are identical, since it is the external captioner.</em></caption>
+</table>
+</div>
+
+<p>Every InternVL3.5 model gains roughly 10% accuracy on MMMU when its image is replaced by a caption. The gain is essentially the same whether the caption is written by the model itself (<code>self_caption</code>) or by an external captioner (<code>injected_caption</code>; InternVL3-14B) &mdash; the within-row difference between the two Δ columns is at most 2.4%. This rules out the obvious explanation that InternVL3.5 simply has a better captioner: even its own descriptions of the image produce the same lift. The bottleneck is not captioning quality; it is how the model uses visual evidence for multi-step reasoning. Given the same content in text form, the language side of the model handles it noticeably better than the visual side.</p>
+
+<p>Qwen3-VL shows the mirror image. Every Qwen3-VL model scores 2&ndash;4 points lower under either caption source, suggesting its visual pathway is doing real work on MMMU that captions cannot replace. The InternVL3 family is split: the 1B model sits near zero, while the 14B patterns with Qwen3-VL (about 4 points lower under either caption).</p>
+
+<h3 id="sec5-4">5.4 &nbsp;Null-Image Bias is small but rarely zero</h3>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Model</th><th class="num">Null-Image Bias (%)</th></tr></thead>
+  <tbody>
+    <tr><td>InternVL3-1B</td><td class="num pos">+0.16</td></tr>
+    <tr><td>Qwen3-VL-2B</td><td class="num neg">&minus;0.44</td></tr>
+    <tr><td>InternVL3.5-30B-A3B</td><td class="num neg">&minus;0.77</td></tr>
+    <tr><td>Qwen3-VL-30B-A3B</td><td class="num neg">&minus;0.80</td></tr>
+    <tr><td>InternVL3-14B</td><td class="num neg">&minus;0.89</td></tr>
+    <tr><td>Qwen3-VL-8B</td><td class="num neg">&minus;1.32</td></tr>
+    <tr><td>InternVL3.5-14B</td><td class="num neg">&minus;1.85</td></tr>
+    <tr><td>InternVL3.5-1B</td><td class="num neg">&minus;1.88</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The average Null-Image Bias is low. Every model except for InternVL3-1B loses a small amount of accuracy when handed an uninformative image relative to receiving no image at all. The visual stream is being read even when it contains no information. This effect is largest on the two InternVL3.5 models, followed by Qwen3-VL-8B. Surprisingly, only InternVL3-1B and Qwen3-VL-2B come close to treating a null image the same as no image at all.</p>
+
+<hr class="rule">
+
+<!-- ════════════════════════ §6 ════════════════════════ -->
+<h2 id="sec6"><span class="num">6</span>Discussion</h2>
+
+<p>Aggregated over benchmarks, our four metrics suggests that accuracy on a multimodal benchmark does not directly mean there&rsquo;s evidence of multimodal reasoning. The whole point of separating Image Contribution from Caption Substitution in §4 was to stop treating a high score as self-explanatory and instead ask what produced it. Several widely used benchmarks turn out to be answerable from priors or from a short caption alone, which means a leaderboard climb on them can come entirely from a stronger language backbone. In terms of those tasks where images do contribute, the kind of contribution is not uniform: text-transcribable tasks give most of it back through a caption, while relational and spatial tasks do not. How &ldquo;visual&rdquo; the VQA benchmarks are is therefore a two-fold question: whether the image matters at all, and whether a caption substitude can &hellip;</p>
+
+<p>Across models, the same metrics say that how a VLM uses its eyes is a property of its lineage more than its size. Dependence on the image <em>falls</em> as models grow, because a larger backbone answers more from memory, and the image-versus-caption lean splits cleanly by family rather than by parameter count. The sharpest cases, where a model reasons better over a description of its image than over the image itself, suggests the weakness specifically in how the vision input feeds downstream reasoning. We hypothesis the reason behind that when VLMs perform much better from a caption than from the original image, is that the backbone LLM and their vision capabilities fail to connect. In these cases, canonical metrics may not well evaluate their vision capabilities as the benchmarks were intended to.</p>
+
+<hr class="rule">
+
+<!-- ════════════════════════ §7 ════════════════════════ -->
+<h2 id="sec7"><span class="num">7</span>Related Work</h2>
+
+<p>Replacing an image with a text description and handing it to a language model has a long history in visual question answering. Caption-then-answer pipelines such as <a href="https://arxiv.org/abs/2109.05014">PICa</a> and <a href="https://arxiv.org/abs/2212.10846">Img2LLM</a> showed that a strong text-only LLM, fed a generated caption, is already competitive on VQA without end-to-end vision&ndash;language training. We revisit that substitution not as a method but as a <em>diagnostic</em>: rather than asking whether a caption pipeline can match a VLM, we ask, per instance, how much of a VLM&rsquo;s own accuracy survives when its image is swapped for a caption.</p>
+
+<p>A parallel line of work audits whether multimodal benchmarks actually require the image. <a href="https://arxiv.org/abs/2403.20330">MMStar</a> found that a large fraction of items across six popular benchmarks are answerable with no visual input and proposed cleaner splits; <a href="https://arxiv.org/abs/2404.01266">IsoBench</a> showed that, given isomorphic image/text representations of the same problem, VLMs systematically score higher from the text form; and <a href="https://arxiv.org/abs/2409.02813">MMMU-Pro</a> hardened MMMU by filtering out the text-solvable subset and adding harder distractors. These audits largely operate at the dataset level &mdash; flagging or removing leaky items. Our metrics complement them at the level of the individual (model, instance) cell: Modality Differential, Caption Substitution, Visual Dependence, and Null-Image Bias quantify not only whether an item is image-dependent, but how a <em>particular</em> model treats the image relative to a caption or to no visual input at all.</p>
+
+<p>Closest in spirit, <a href="https://arxiv.org/abs/2603.21687">MIRAGE</a> showed that frontier models will generate detailed image descriptions and confident answers even when no image is provided, topping a chest-X-ray QA benchmark blind. Our null-input controls (no-image, blank-white, and random-noise) and the Null-Image Bias metric are designed to surface exactly this behavior in open-weight VLMs and to separate it from genuine visual gain. Where prior audits ask &ldquo;is this benchmark visual?&rdquo;, we add &ldquo;is this <em>model</em> visual, and on which inputs?&rdquo; &mdash; turning the image-vs-caption comparison into a per-instance, scale-free diagnostic.</p>
+
+<hr class="rule">
+
+<!-- ════════════════════════ Citation ════════════════════════ -->
+<h2 id="cite">Citation</h2>
+
+<p>If you find this post useful, please cite it as:</p>
+
+<pre class="bibtex">@misc{fu2026seeing,
+  title  = {Seeing Is Not Reasoning: How VLMs and Their Benchmarks Lean on Text},
+  author = {Fu, Harvey Yiyun and Yang, Chenghao and Chang, Ting-Yun and
+            Wang, Zhaowei and Wu, Zhaofeng and Zhou, Jiawei and Fu, Deqing},
+  year   = {2026},
+  month  = {May},
+  url    = {https://TODO-update-with-final-url}
+}</pre>
+
+</article>
+</main>
+
+<footer class="site">
+  <p><em>Comments and corrections welcome &mdash; reach out to the authors.</em></p>
+</footer>
+
+<script>
+// Highlight the current section in the fixed sidebar TOC as the reader scrolls.
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc-rail a'));
+  if (!links.length) return;
+
+  var sections = links.map(function (a) {
+    return { link: a, el: document.getElementById(a.getAttribute('href').slice(1)) };
+  }).filter(function (s) { return s.el; });
+
+  var OFFSET = 120; // px from top of viewport that counts as "current"
+
+  function update() {
+    var current = sections[0];
+    for (var i = 0; i < sections.length; i++) {
+      // the last section whose top has scrolled above the offset line is current
+      if (sections[i].el.getBoundingClientRect().top <= OFFSET) {
+        current = sections[i];
+      } else {
+        break;
+      }
+    }
+    // if scrolled to the very bottom, force-highlight the last section
+    if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 2) {
+      current = sections[sections.length - 1];
+    }
+    links.forEach(function (a) { a.classList.toggle('active', a === current.link); });
+  }
+
+  var ticking = false;
+  function onScroll() {
+    if (!ticking) {
+      ticking = true;
+      window.requestAnimationFrame(function () { update(); ticking = false; });
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+  update();
+})();
+</script>
+
+<script>
+// Glossary tooltips: wrap each metric name in §4–§6 so hovering shows its equation.
+(function () {
+  var DEFS = [
+    ["Modality Differential", "( g<sub>image</sub> &minus; g<sub>caption</sub> ) / ( |g<sub>image</sub>| + |g<sub>caption</sub>| )"],
+    ["Caption Substitution",  "mean( g<sub>caption</sub> ) / mean( g<sub>image</sub> )"],
+    ["Null-Image Bias",       "&frac12;( acc(white) + acc(noise) ) &minus; acc(no_images)"],
+    ["Visual Dependence",     "( acc(original) &minus; acc(no_images) ) / acc(original)"],
+    ["Image Contribution",    "acc(original) &minus; acc(no_images)"]
+  ];
+  DEFS.sort(function (a, b) { return b[0].length - a[0].length; });           // longest first
+  var defMap = {}; DEFS.forEach(function (d) { defMap[d[0].toLowerCase()] = d[1]; });
+  var esc = DEFS.map(function (d) { return d[0].replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'); });
+  var rxG = new RegExp("\\b(" + esc.join("|") + ")\\b", "g");
+  var rxT = new RegExp("\\b(" + esc.join("|") + ")\\b");
+
+  var start = document.getElementById('sec4');
+  var article = document.querySelector('article');
+  if (!start || !article) return;
+  var after = function (el) { return start.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING; };
+
+  article.querySelectorAll('p, li, figcaption').forEach(function (block) {
+    if (!after(block)) return;                       // only sections after §3
+    var walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (n) {
+        if (!n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        var p = n.parentNode;
+        while (p && p !== block) {
+          var t = p.nodeName;
+          if (t === 'A' || t === 'CODE' || t === 'SUB' ||
+              (p.classList && (p.classList.contains('term') || p.classList.contains('math'))))
+            return NodeFilter.FILTER_REJECT;
+          p = p.parentNode;
+        }
+        return rxT.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    var nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(function (node) {
+      var text = node.nodeValue, m, last = 0, any = false;
+      var frag = document.createDocumentFragment();
+      rxG.lastIndex = 0;
+      while ((m = rxG.exec(text))) {
+        any = true;
+        frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+        var span = document.createElement('span');
+        span.className = 'term'; span.tabIndex = 0;
+        span.appendChild(document.createTextNode(m[0]));
+        var tip = document.createElement('span'); tip.className = 'tip';
+        tip.innerHTML = '<span class="tip-name">' + m[0] + '</span>' +
+                        '<span class="tip-eq">' + defMap[m[0].toLowerCase()] + '</span>';
+        span.appendChild(tip);
+        frag.appendChild(span);
+        last = m.index + m[0].length;
+      }
+      if (any) { frag.appendChild(document.createTextNode(text.slice(last))); node.parentNode.replaceChild(frag, node); }
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
