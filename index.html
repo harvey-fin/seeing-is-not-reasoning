@@ -745,8 +745,8 @@ pre.bibtex{
   </div>
 
   <div class="bench-card">
-    <img class="bench-thumb" src="bench/thumb/sparkle_static.jpg" alt="SPARKLE-Static: a synthetic scene of labelled nodes.">
-    <div class="bench-body"><div class="bench-name">SPARKLE-Static</div>
+    <img class="bench-thumb" src="bench/thumb/sparkle_static.jpg" alt="SPARKLE-Basic: a synthetic scene of labelled nodes.">
+    <div class="bench-body"><div class="bench-name">SPARKLE-Basic</div>
     <div class="bench-q">Q: Which distance is the shortest: N4&ndash;N5, N4&ndash;N2, or N5&ndash;N2?</div></div>
   </div>
 
@@ -935,7 +935,7 @@ Practical judge-trust recipe — for every (model, dataset, mode) cell, log: loc
   <figcaption><em>Figure 1. Benchmark taxonomy: image contribution vs Caption Substitution. Each point is one benchmark, averaged across the 8 open-weight VLMs. X-axis: image contribution. Y-axis: Caption Substitution. The dashed line at <code>y = 1</code> separates benchmarks where captions partially substitute for the image (below) from those where captions outperform the image (above).</em></figcaption>
 </figure>
 
-<p>Two patterns stand out. Along the <strong>Caption Substitution</strong> axis, six of the nine benchmarks (MMMU, WorldVQA, CountBench, InfoVQA, RefCOCO, and SPARKLE-Static) have a Caption Substitution value of roughly 0.85 or higher, meaning that a static caption recovers most or all of the model&rsquo;s image gain. The effect is largest on MMMU, where the value of 1.72 reflects captions outperforming the original image by 2.8%. Along the <strong>Image Contribution</strong> axis, four benchmarks (RealWorldQA (&minus;0.6%), SPARKLE-TSP (+2.5%), MMMU (+3.9%), and WorldVQA (+6.4%)) show negligible improvement over a no-image baseline. These observations are consistent with prior work such as <a href="https://arxiv.org/abs/2403.20330">MMStar</a> and <a href="https://arxiv.org/abs/2603.21687">MIRAGE</a>.</p>
+<p>Two patterns stand out. Along the <strong>Caption Substitution</strong> axis, six of the nine benchmarks (MMMU, WorldVQA, CountBench, InfoVQA, RefCOCO, and SPARKLE-Basic) have a Caption Substitution value of roughly 0.85 or higher, meaning that a static caption recovers most or all of the model&rsquo;s image gain. The effect is largest on MMMU, where the value of 1.72 reflects captions outperforming the original image by 2.8%. Along the <strong>Image Contribution</strong> axis, four benchmarks (RealWorldQA (&minus;0.6%), SPARKLE-TSP (+2.5%), MMMU (+3.9%), and WorldVQA (+6.4%)) show negligible improvement over a no-image baseline. These observations are consistent with prior work such as <a href="https://arxiv.org/abs/2403.20330">MMStar</a> and <a href="https://arxiv.org/abs/2603.21687">MIRAGE</a>.</p>
 
 <p>We take a useful multimodal benchmark to be one whose Image Contribution is non-trivially positive: if accuracy does not rise when the image is provided, then a model&rsquo;s correct answers cannot be credited to visual reasoning in the first place. Among the benchmarks that pass this bar, Caption Substitution then the types of visual content being tested. Tasks that lean on relational or spatial structure, where short text descriptions cannot disambiguate the referent, such as CLEVR (Caption Substitution = 0.51). On the other hand, tasks whose images are text-heavy or contain content that captions can loselessly transcribe, such as text as in CountBench, InfoVQA, and RefCOCO (all near 0.87&ndash;0.88), we observe that the performances are nearly identical.</p>
 
@@ -984,7 +984,7 @@ Practical judge-trust recipe — for every (model, dataset, mode) cell, log: loc
   <text x="201.0" y="64" text-anchor="middle" font-size="12.5" fill="var(--ink)">WorldVQA</text>
   <line x1="169.2" y1="117.0" x2="169.2" y2="136" stroke="#76b7b2" stroke-width="1.6" opacity="0.65"/>
   <circle cx="169.2" cy="112" r="5.5" fill="#76b7b2" stroke="var(--bg)" stroke-width="1.5"/>
-  <text x="141.2" y="146" text-anchor="middle" font-size="12.5" fill="var(--ink)">SPARKLE-Static</text>
+  <text x="141.2" y="146" text-anchor="middle" font-size="12.5" fill="var(--ink)">SPARKLE-Basic</text>
   <line x1="236.8" y1="107.0" x2="236.8" y2="45" stroke="#b07aa1" stroke-width="1.6" opacity="0.65"/>
   <circle cx="236.8" cy="112" r="5.5" fill="#b07aa1" stroke="var(--bg)" stroke-width="1.5"/>
   <text x="252.8" y="40" text-anchor="middle" font-size="12.5" fill="var(--ink)">SPARKLE-TSP</text>
