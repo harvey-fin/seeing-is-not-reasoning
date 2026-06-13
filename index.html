@@ -859,8 +859,6 @@ If your metric assigns 71% to a model that cannot see the image, your metric is 
 
 <p>Since §2 defines two caption conditions, the Modality Differential takes two forms. Substituting <code>g_injected_caption</code> for the caption term gives the <strong>injected Modality Differential</strong>, which measures image reliance against a clean text description written by a separate model. Substituting <code>g_self_caption</code> gives the <strong>self Modality Differential</strong>, which measures image reliance against the model&rsquo;s own description of the image. The gap between the two isolates the captioning phase, for cases where models can reason well once given the information but struggle to extract it from the image themselves.</p>
 
-<p>A note on naming: the per-instance score above is unrelated to <a href="https://arxiv.org/abs/2603.21687">MIRAGE: The Illusion of Visual Understanding (Asadi et al., 2026)</a>, which uses the term &ldquo;mirage reasoning&rdquo; for a different phenomenon &mdash; multimodal models generating detailed visual descriptions when no image is present in the prompt. Both works diagnose problems with current multimodal evaluation, but from different angles: theirs documents hallucination in the absence of an image, ours quantifies image-vs-caption reliance when an image is present.</p>
-
 <h3>Derived Quantities</h3>
 <p>Based on the metrics above, there are a few aggregations of them that we think are informative to look at.</p>
 
