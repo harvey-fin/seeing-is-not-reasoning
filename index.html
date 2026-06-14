@@ -1021,7 +1021,7 @@ Practical judge-trust recipe — for every (model, dataset, mode) cell, log: loc
 
 <figure id="fig4">
   <img src="fig7_vge_models.png" alt="Visual Dependence by model" />
-  <figcaption><em>Figure 4. Visual Dependence by model. <code>Visual Dependence = (acc(original) &minus; acc(no_images)) / acc(original)</code>, computed per model and averaged across the 9 benchmarks. Higher values indicate that a larger share of the model&rsquo;s correct answers required the image.</em></figcaption>
+  <figcaption><em>Figure 4. Visual Dependence vs model size. Each point is one model: <code>Visual Dependence = (acc(original) &minus; acc(no_images)) / acc(original)</code>, averaged across the 9 benchmarks, plotted against total parameter count (MoE &ldquo;-A3B&rdquo; models counted by total parameters). Within every family it declines as the model grows.</em></figcaption>
 </figure>
 
 <p>Visual Dependence is varies between 68% and 75% across all eight models. There&rsquo;s a trend that it scales inversely with model scale, dropping from 73-74% for 1B and 2B models to 68-70% for 30B variants. We hypothesize that this is because larger models have a larger LLM backbone, which resolves a larger share of questions from world knowledge alone, leaving a smaller residual share for the image to actually contribute to.</p>
