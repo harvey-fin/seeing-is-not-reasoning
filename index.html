@@ -1003,7 +1003,7 @@ Practical judge-trust recipe — for every (model, dataset, mode) cell, log: loc
 
 <figure id="fig2">
   <img src="fig3_phantom_vision.png" alt="Null-Image Bias per benchmark" />
-  <figcaption><em>Figure 2. Null-Image Bias by benchmark. Each bar is <code>½(acc(white) + acc(noise)) &minus; acc(no_images)</code>, averaged across the 8 VLMs and reported in percent. Bars below zero indicate that an uninformative image hurts relative to no image at all; bars above zero indicate that it helps.</em></figcaption>
+  <figcaption><em>Figure 2. Null-Image Bias by benchmark. Each bar averaged across the 8 VLMs and reported in percent. Bars below zero indicate that an uninformative image hurts relative to no image at all; bars above zero indicate that it helps.</em></figcaption>
 </figure>
 
 <p>Across most benchmarks, an uninformative image hurts model performance, as expected. On RealWorldQA and CLEVR, however, a white or pure-noise image improves accuracy. This suggests that these benchmarks either leak more information through question phrasing than through the image, or that their answers are already memorized by the models.</p>
@@ -1021,7 +1021,7 @@ Practical judge-trust recipe — for every (model, dataset, mode) cell, log: loc
 
 <figure id="fig4">
   <img src="fig7_vge_models.png" alt="Visual Dependence by model" />
-  <figcaption><em>Figure 4. Visual Dependence vs model size. Each point is one model: <code>Visual Dependence = (acc(original) &minus; acc(no_images)) / acc(original)</code>, averaged across the 9 benchmarks, plotted against total parameter count (MoE &ldquo;-A3B&rdquo; models counted by total parameters). Within every family it declines as the model grows.</em></figcaption>
+  <figcaption><em>Figure 4. Visual Dependence vs model size. Each point shows the Visual Dependence of one VLM averaged across the 9 benchmarks, plotted against total parameter count (MoE &ldquo;-A3B&rdquo; models counted by total parameters). Within every family it declines as the model grows.</em></figcaption>
 </figure>
 
 <p>Visual Dependence is varies between 68% and 75% across all eight models. There&rsquo;s a trend that it scales inversely with model scale, dropping from 73-74% for 1B and 2B models to 68-70% for 30B variants. We hypothesize that this is because larger models have a larger LLM backbone, which resolves a larger share of questions from world knowledge alone, leaving a smaller residual share for the image to actually contribute to.</p>
