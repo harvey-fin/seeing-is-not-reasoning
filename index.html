@@ -236,6 +236,7 @@ th{
   position:sticky;top:0;
 }
 tr:last-child td{border-bottom:none}
+tr.divider td{border-top:2.5px solid var(--ink-soft)}
 td.num,th.num{text-align:right;font-variant-numeric: tabular-nums;font-family:var(--font-mono);font-size:13px}
 .pos{color:var(--good);font-weight:500}
 .neg{color:var(--bad);font-weight:500}
@@ -278,11 +279,11 @@ caption{
 }
 /* stacked fraction */
 .math .frac{
-  display:inline-flex; flex-direction:column; align-items:center;
+  display:inline-flex; flex-direction:column; align-items:stretch;
   vertical-align:middle; margin:0 0.3em;
 }
-.math .frac .top{ padding:0 0.7em 0.14em; }
-.math .frac .bot{ padding:0.14em 0.7em 0; border-top:1.6px solid var(--ink); }
+.math .frac .top{ padding:0 0.7em 0.14em; text-align:center; }
+.math .frac .bot{ padding:0.14em 0.7em 0; border-top:1.6px solid var(--ink); text-align:center; }
 .math em{ font-family:"KaTeX_Math","Latin Modern Roman",serif; color:var(--accent); font-style:italic; font-weight:normal; }
 
 /* ────── Figures ────── */
@@ -534,7 +535,7 @@ pre.bibtex{
   </nav>
 
   <div class="hero">
-    <div class="kicker">essay · vision-language models · evaluation</div>
+    <div class="kicker">vision-language models · evaluation</div>
     <h1>Seeing Is Not Reasoning:<br>How VLMs and Their Benchmarks Lean on Text</h1>
     <!-- AUTHOR ↔ AFFILIATION MAPPING: the <sup> numbers below are a placeholder guess. Adjust each author's superscript to match the numbered affiliation legend (1=UChicago, 2=USC, 3=Edinburgh, 4=MIT, 5=Stony Brook). Multiple affiliations: e.g. <sup>1,2</sup>. -->
     <div class="byline">
@@ -588,12 +589,12 @@ pre.bibtex{
   <span class="icon">📌</span>
   <div>
     <span class="tldr-label">TL;DR</span>
-    We stress-test 8 open-weight VLMs on 9 popular multimodal benchmarks under different input conditions to ask a simple question: <em>how much does each benchmark actually depend on the images themselves?</em>
+    We stress-test 8 open-weight VLMs on 9 VQA benchmarks under different input conditions to ask two questions: <em>how much does each benchmark actually depend on the image</em>, and <em> how much of VLMs' reasoning capabilities depend on the visual input?</em>
     <ol>
-      <li>In roughly a third of the (model &times; benchmark) pairs we tested, a model does as well or better when the image is replaced by a short text caption &mdash; many &ldquo;multimodal&rdquo; benchmarks barely depend on the image.</li>
-      <li>Image-dependence is a property of the model family more than its size. On MMMU, every InternVL3.5 model reasons better when its image is replaced by a text caption, while every Qwen3-VL model goes the other direction.</li>
-      <li>We propose the <strong>Modality Differential</strong>, a per-instance score bounded in <code>[-1, +1]</code> that audits whether a benchmark genuinely needs the image during reasoning, alongside three companion metrics &mdash; Caption Substitution, Null-Image Bias, and Visual Dependence.</li>
-      <li>Larger models become <em>less</em> vision-grounded as they accumulate text priors: raw accuracy overstates the visual capability of the biggest VLMs in our set.</li>
+      <li>In roughly a third of the (model &times; benchmark) pairs we tested, a model does as well or better when the image is replaced by a short text caption. Certian VQA benchmarks barely depend on the images.</li>
+      <li>Image-dependence is a property of the model family more than its size. On MMMU, InternVL3.5 models reason better when its image is replaced by a text caption, while Qwen3-VL models go the other direction.</li>
+      <li>We propose <strong>Modality Differential</strong>, a per-instance score bounded in <code>[-1, +1]</code> that audits whether a benchmark genuinely needs the image during reasoning, alongside three metrics: Caption Substitution, Null-Image Bias, and Visual Dependence.</li>
+      <li>Larger models become <em>less</em> vision-grounded as they accumulate text priors: Visual Dependence scales inversely with model scale. Raw benchmark accuracies overstates the visual capability of the VLMs</li>
     </ol>
   </div>
 </div>
@@ -619,7 +620,7 @@ pre.bibtex{
 
 <p>In 2025, AI agents such as Claude Code and Codex were heavily integrated into daily use as they became capable of processing long-context inputs across different modalities. What to feed into the context window has since become not only a question of token expense but also an active area of research. High-resolution images, in particular, take up a large share of the token budget to encode. If they can be replaced with text captions, the savings on context length would be substantial. But doing so requires a prior that image captions alone can match the downstream performance of using the image as input.</p>
 
-<p>The architecture of widely used vision-language models (VLMs) suggests that this prior may hold. Recent VLMs such as InternVL3 and Qwen3-VL pair a pre-trained text-only LLM backbone with a vision encoder, and a growing body of work has questioned how much of a VLM&rsquo;s downstream capability is genuinely visual versus inherited from its backbone LM. Caption-then-answer pipelines such as <a href="https://arxiv.org/abs/2109.05014">PICa</a> and <a href="https://arxiv.org/abs/2212.10846">Img2LLM</a> showed early on that replacing the image with a generated caption and handing the result to a strong text LLM was already competitive on VQA. More recent benchmark audits have made the same point from the other direction: <a href="https://arxiv.org/abs/2403.20330"><strong>MMStar</strong></a> found that roughly half of the items in six widely used multimodal benchmarks can be answered without the image at all, and <a href="https://arxiv.org/abs/2404.01266"><strong>IsoBench</strong></a> showed that on isomorphic image/text pairs, VLMs systematically perform better when given the text version. <a href="https://arxiv.org/abs/2409.02813"><strong>MMMU-Pro</strong></a> was constructed specifically to filter out the text-solvable subset of MMMU. Closest to our setting, <a href="https://arxiv.org/abs/2603.21687"><strong>MIRAGE</strong></a> showed that frontier models will generate detailed image descriptions and reasoning traces even when no image is provided, achieving top rank on a chest X-ray QA benchmark without any visual input at all.</p>
+<p>The architecture of widely used vision-language models (VLMs) suggests that this prior may hold. Recent VLMs such as InternVL3 and Qwen3-VL pair a pre-trained text-only LLM backbone with a vision encoder, and a growing body of work has questioned how much of a VLM&rsquo;s downstream capability is genuinely visual versus inherited from its backbone LM. Caption-then-answer pipelines such as <a href="https://arxiv.org/abs/2109.05014"><strong>PICa</strong></a> and <a href="https://arxiv.org/abs/2212.10846"><strong>Img2LLM</strong></a> showed early on that replacing the image with a generated caption and handing the result to a strong text LLM was already competitive on VQA. More recent benchmark audits have made the same point from the other direction: <a href="https://arxiv.org/abs/2403.20330"><strong>MMStar</strong></a> found that roughly half of the items in six widely used multimodal benchmarks can be answered without the image at all, and <a href="https://arxiv.org/abs/2404.01266"><strong>IsoBench</strong></a> showed that on isomorphic image/text pairs, VLMs systematically perform better when given the text version. <a href="https://arxiv.org/abs/2409.02813"><strong>MMMU-Pro</strong></a> was constructed specifically to filter out the text-solvable subset of MMMU. Closest to our setting, <a href="https://arxiv.org/abs/2603.21687"><strong>MIRAGE</strong></a> showed that frontier models will generate detailed image descriptions and reasoning traces even when no image is provided, achieving top rank on a chest X-ray QA benchmark without any visual input at all.</p>
 
 <p>In this post, we systematically evaluate 8 open-weight VLMs on 9 popular visual question answering (VQA) benchmarks under several input conditions. For instance, replacing the original image with a text caption. Here's an example:</p>
 
@@ -759,7 +760,7 @@ pre.bibtex{
 </div>
 
 <h3 id="sec2-3">2.3 &nbsp;Input conditions</h3>
-<p>For every (model, question) pair we record the model&rsquo;s answer under six input conditions. The first three vary the <em>type</em> of visual evidence the model is given; the last three are null-input controls that establish what the model can do without genuine visual information.</p>
+<p>For every (model, question) pair we record the model&rsquo;s answer under six input conditions. The first three vary the type of visual evidence the model is given; the last three are null-input controls that establish what the model can do without genuine visual information.</p>
 
 <div class="table-wrap">
 <table>
@@ -768,7 +769,7 @@ pre.bibtex{
     <tr><td><code>original</code></td><td>the actual image + the question</td><td>benchmark-as-intended</td></tr>
     <tr><td><code>injected_caption</code></td><td>a short text caption generated by InternVL3-14B, in place of the image</td><td>text-only with an honest visual proxy</td></tr>
     <tr><td><code>self_caption</code></td><td>the models generate their own captions, in place of the image</td><td>the model captioning itself</td></tr>
-    <tr><td><code>no_images</code></td><td>no image at all, question only</td><td>pure prior baseline</td></tr>
+    <tr class="divider"><td><code>no_images</code></td><td>no image at all, question only</td><td>pure prior baseline</td></tr>
     <tr><td><code>white</code></td><td>a blank white image + the question</td><td>null-input with a visual <em>format</em> signal</td></tr>
     <tr><td><code>noise</code></td><td>a random-noise image + the question</td><td>null-input with an alternative visual format signal</td></tr>
   </tbody>
@@ -811,7 +812,7 @@ If your metric assigns 71% to a model that cannot see the image, your metric is 
 <!-- ════════════════════════ §3 ════════════════════════ -->
 <h2 id="sec3"><span class="num">3</span>Dimensions of Interpretation</h2>
 
-<p>Accuracy on a VQA benchmark records whether a model answered correctly, but not what it answered correctly <em>from</em>, whether it is from the image, the wording of the question, or knowledge already present in the backbone LM. Before we report results, we want a few metrics that distinguish these cases.</p>
+<p>Accuracy on a VQA benchmark records whether a model answered correctly, but not what it answered correctly from: whether it is from the image, the wording of the question, or knowledge already present in the backbone LM. Before we report results, we would like a few metrics that distinguish these cases.</p>
 
 <p>We treat the three null-input conditions as noisy estimates of the same underlying quantity: the accuracy the model reaches without genuine visual evidence. Their average gives a per-instance baseline,</p>
 
@@ -855,9 +856,9 @@ If your metric assigns 71% to a model that cannot see the image, your metric is 
   <span class="eqno">(3)</span>
 </div>
 
-<p>The score is bounded in <code>[&minus;1, +1]</code>. A value near <code>+1</code> means the image lifts accuracy on this instance and the caption does not. This indicates that the answer depends on something visual that a short text description does not preserve. A value near <code>&minus;1</code> means the opposite, that the caption already delivers abundant information while adding the image either does nothing or interferes. A value near <code>0</code> means the two inputs are roughly interchangeable for this question.</p>
+<p>The score is bounded in <code>[&minus;1, +1]</code>. A value near <code>+1</code> means the image lifts accuracy on this instance and the caption does not. This indicates that the answer depends on something visual that a short text description does not preserve. A value near <code>&minus;1</code> means that the caption already delivers abundant information while adding the image either does nothing or interferes. A value near <code>0</code> means the two inputs are roughly interchangeable for this question.</p>
 
-<p>Since §2 defines two caption conditions, the Modality Differential takes two forms. Substituting <code>g_injected_caption</code> for the caption term gives the <strong>injected Modality Differential</strong>, which measures image reliance against a clean text description written by a separate model. Substituting <code>g_self_caption</code> gives the <strong>self Modality Differential</strong>, which measures image reliance against the model&rsquo;s own description of the image. The gap between the two isolates the captioning phase, for cases where models can reason well once given the information but struggle to extract it from the image themselves.</p>
+<p>We compute the Modality Differential with the <strong>injected caption</strong>, which is a clean description written by a separate model (InternVL3-14B). In these cases the images are judged against text proxies with controlled qualities, isolating whether they add information that good descriptions do not include.</p>
 
 <h3>Derived Quantities</h3>
 <p>Based on the metrics above, there are a few aggregations of them that we think are informative to look at.</p>
@@ -874,7 +875,7 @@ If your metric assigns 71% to a model that cannot see the image, your metric is 
   <span class="eqno">(4)</span>
 </div>
 
-<p>a unitless ratio describing what fraction of the model&rsquo;s visual gain a caption recovers. A value near <code>0</code> indicates an irreducibly visual benchmark; near <code>1</code> indicates that a caption recovers as much accuracy as the image; greater than <code>1</code> indicates that the caption outperforms the image.</p>
+<p>This is a unitless ratio describing what fraction of the model&rsquo;s visual gain a caption recovers. A value near <code>0</code> indicates an irreducibly visual benchmark; near <code>1</code> indicates that a caption recovers as much accuracy as the image; greater than <code>1</code> indicates that the caption outperforms the image.</p>
 
 <p>The <strong>Null-Image Bias</strong> isolates the behavior of null-but-present visual inputs:</p>
 
@@ -892,7 +893,7 @@ If your metric assigns 71% to a model that cannot see the image, your metric is 
   <span class="eqno">(5)</span>
 </div>
 
-<p>If a model treated uninformative pixels as a clean absence of information, Null-Image Bias would be zero. In practice it is usually not, and its sign tells us whether fake images help (the visual stream is acting as a format cue) or hurt (it is hijacking attention).</p>
+<p>If a model treated uninformative pixels as a clean absence of information, Null-Image Bias would be zero. In practice it is usually not, and its sign tells us whether fake images help (the visual stream is acting as a format cue) or hurt (when it is hijacking attention).</p>
 
 <p>Lastly, the <strong>Visual Dependence</strong> of a model is</p>
 
@@ -906,7 +907,7 @@ If your metric assigns 71% to a model that cannot see the image, your metric is 
   <span class="eqno">(6)</span>
 </div>
 
-<p>the fraction of a model&rsquo;s correct answers that required the image. Visual Dependence is bounded in <code>(&minus;&infin;, 1]</code> (typically <code>[0, 1]</code>) and is scale-free, which makes it suitable for comparing models of different sizes on the same benchmark.</p>
+<p>It represents the fraction of a model&rsquo;s correct answers that required the image. Visual Dependence is bounded in <code>(&minus;&infin;, 1]</code> (typically <code>[0, 1]</code>) and is scale-free, which makes it suitable for comparing models of different sizes on the same benchmark.</p>
 
 <p>Modality Differential, Caption Substitution, Null-Image Bias, and Visual Dependence are the four quantities that we use to interpret behaviors of VLMs when processing different modalities.</p>
 
@@ -937,11 +938,11 @@ Practical judge-trust recipe — for every (model, dataset, mode) cell, log: loc
 
 <p>Two patterns stand out. Along the <strong>Caption Substitution</strong> axis, six of the nine benchmarks (MMMU, WorldVQA, CountBench, InfoVQA, RefCOCO, and SPARKLE-Basic) have a Caption Substitution value of roughly 0.85 or higher, meaning that a static caption recovers most or all of the model&rsquo;s image gain. The effect is largest on MMMU, where the value of 1.72 reflects captions outperforming the original image by 2.8%. Along the <strong>Image Contribution</strong> axis, four benchmarks (RealWorldQA (&minus;0.6%), SPARKLE-TSP (+2.5%), MMMU (+3.9%), and WorldVQA (+6.4%)) show negligible improvement over a no-image baseline. These observations are consistent with prior work such as <a href="https://arxiv.org/abs/2403.20330">MMStar</a> and <a href="https://arxiv.org/abs/2603.21687">MIRAGE</a>.</p>
 
-<p>We take a useful multimodal benchmark to be one whose Image Contribution is non-trivially positive: if accuracy does not rise when the image is provided, then a model&rsquo;s correct answers cannot be credited to visual reasoning in the first place. Among the benchmarks that pass this bar, Caption Substitution then the types of visual content being tested. Tasks that lean on relational or spatial structure, where short text descriptions cannot disambiguate the referent, such as CLEVR (Caption Substitution = 0.51). On the other hand, tasks whose images are text-heavy or contain content that captions can loselessly transcribe, such as text as in CountBench, InfoVQA, and RefCOCO (all near 0.87&ndash;0.88), we observe that the performances are nearly identical.</p>
+<p>We take a useful VQA benchmark to be one whose Image Contribution is non-trivially positive: if accuracy does not rise when the image is provided, then a model&rsquo;s correct answers cannot be credited to visual reasoning in the first place. Among the benchmarks that pass this bar, Caption Substitution tracks the type of visual content being tested. Tasks that lean on relational or spatial structure, where a short text description cannot disambiguate the referent, keep a low Caption Substitution such as in CLEVR (0.51). Tasks whose images are text-heavy or otherwise losslessly transcribable into words: CountBench, InfoVQA, and RefCOCO (near 0.87&ndash;0.88) score much higher, with image and caption performing nearly identically.</p>
 
 <h3 id="sec4-2">4.2 &nbsp;Per-benchmark Modality Differential</h3>
 
-<p>Modality Differential collapses the two axes of <a href="#fig1">Figure 1</a> into a single bounded number per benchmark. When both image and caption gains are clearly positive, it reduces algebraically to <code>(1 &minus; CS) / (1 + CS)</code>, which is a monotonic remapping of Caption Substitution alone. When either gain is small or noisy, the per-instance average decays toward zero rather than diverging like the ratio. The net effect is that Modality Differential reads <a href="#fig1">Figure 1</a> along a rough diagonal from bottom-right (large image contribution; captions fail to recover it) to top-left (small image contribution; captions match or exceed it). A high value therefore signals two things at once: that the image is contributing meaningfully <em>and</em> that captions fail to substitute for it.</p>
+<p>Modality Differential collapses the two axes of <a href="#fig1">Figure 1</a> into a single bounded number per benchmark. When both image and caption gains are clearly positive, it reduces algebraically to <code>(1 &minus; CS) / (1 + CS)</code>, which is a monotonic remapping of Caption Substitution alone. When either gain is small or noisy, the per-instance average decays toward zero. The net effect is that Modality Differential reads <a href="#fig1">Figure 1</a> along a rough diagonal from bottom-right (large image contribution; captions fail to recover it) to top-left (small image contribution; captions match or exceed it). A high value therefore signals two things at once: that the image is contributing meaningfully <em>and</em> that captions fail to substitute for it.</p>
 
 <figure id="fig-md">
   <svg viewBox="0 0 720 204" role="img" aria-label="Per-benchmark Modality Differential on a number line from caption-leaning (left) to image-leaning (right)." style="width:100%;height:auto;font-family:var(--font-sans)">
@@ -1003,7 +1004,7 @@ Practical judge-trust recipe — for every (model, dataset, mode) cell, log: loc
 
 <figure id="fig2">
   <img src="fig3_phantom_vision.png" alt="Null-Image Bias per benchmark" />
-  <figcaption><em>Figure 2. Null-Image Bias by benchmark. Each bar averaged across the 8 VLMs and reported in percent. Bars below zero indicate that an uninformative image hurts relative to no image at all; bars above zero indicate that it helps.</em></figcaption>
+  <figcaption><em>Figure 2. Null-Image Bias by benchmark. Each bar is <code>½(acc(white) + acc(noise)) &minus; acc(no_images)</code>, averaged across the 8 VLMs and reported in percent. Bars below zero indicate that an uninformative image hurts relative to no image at all; bars above zero indicate that it helps.</em></figcaption>
 </figure>
 
 <p>Across most benchmarks, an uninformative image hurts model performance, as expected. On RealWorldQA and CLEVR, however, a white or pure-noise image improves accuracy. This suggests that these benchmarks either leak more information through question phrasing than through the image, or that their answers are already memorized by the models.</p>
@@ -1013,7 +1014,7 @@ Practical judge-trust recipe — for every (model, dataset, mode) cell, log: loc
 <!-- ════════════════════════ §5 ════════════════════════ -->
 <h2 id="sec5"><span class="num">5</span>VLM Capability Evaluation</h2>
 
-<p>§4 read the four metrics one benchmark at a time. The same quantities, aggregated the other way &mdash; per model, averaged across the 9 benchmarks &mdash; describe how each VLM in our set processes its inputs. We add one extra subsection comparing the model&rsquo;s own caption (<code>self_caption</code>) against an externally injected one (<code>injected_caption</code>), since this is naturally a per-model diagnostic.</p>
+<p>§4 read the four metrics one benchmark at a time. Here we evaluate the metrics by aggregating over each VLM, averaged across the 9 benchmarks. This helps us to interpret how each VLM in our set processes its inputs.</p>
 
 <h3 id="sec5-1">5.1 &nbsp;Visual Dependence drops with model scale</h3>
 
@@ -1021,14 +1022,14 @@ Practical judge-trust recipe — for every (model, dataset, mode) cell, log: loc
 
 <figure id="fig4">
   <img src="fig7_vge_models.png" alt="Visual Dependence by model" />
-  <figcaption><em>Figure 4. Visual Dependence vs model size. Each point shows the Visual Dependence of one VLM averaged across the 9 benchmarks, plotted against total parameter count (MoE &ldquo;-A3B&rdquo; models counted by total parameters). Within every family it declines as the model grows.</em></figcaption>
+  <figcaption><em>Figure 4. Visual Dependence vs model size averaged across the 9 benchmarks, plotted against total parameter count (Here 30B MoE &ldquo;-A3B&rdquo; models are counted by total parameters). Within every family it declines as the model grows.</em></figcaption>
 </figure>
 
 <p>Visual Dependence is varies between 68% and 75% across all eight models. There&rsquo;s a trend that it scales inversely with model scale, dropping from 73-74% for 1B and 2B models to 68-70% for 30B variants. We hypothesize that this is because larger models have a larger LLM backbone, which resolves a larger share of questions from world knowledge alone, leaving a smaller residual share for the image to actually contribute to.</p>
 
 <h3 id="sec5-2">5.2 &nbsp;The image-vs-caption lean is family-specific</h3>
 
-<p>Aggregating Modality Differential and Caption Substitution across the 9 benchmarks gives a single number per model alone each axis. They separate the two VLM model family.</p>
+<p>Aggregating Modality Differential and Caption Substitution across the 9 benchmarks gives a single number per model alone each axis. They separate the three VLM model families.</p>
 
 <div class="table-wrap">
 <table>
@@ -1046,7 +1047,7 @@ Practical judge-trust recipe — for every (model, dataset, mode) cell, log: loc
 </table>
 </div>
 
-<p>In terms of Modality Differential and Caption Substitution, three model families show a clear trend. Modality Differential and Caption Substituion scales inversely, since [&hellip;]. The Qwen3-VL family turns out to be most image-leaning while InternVL3.5 being the least. This suggests that VLM architecture and pre-training decisions may matter more than scaling for how models treat image versus caption inputs.</p>
+<p>In terms of Modality Differential and Caption Substitution, three model families show a clear trend. Modality Differential and Caption Substitution scale inversely by definition. The Qwen3-VL models turns out to be most image-leaning, while InternVL3.5 models being the least. This suggests that VLM architecture and pre-training decisions may matter more than scaling for how models treat image versus caption inputs.</p>
 
 <h3 id="sec5-3">5.3 &nbsp;Case study: when text beats the image (InternVL3.5 on MMMU)</h3>
 
@@ -1069,9 +1070,9 @@ Practical judge-trust recipe — for every (model, dataset, mode) cell, log: loc
 </table>
 </div>
 
-<p>Every InternVL3.5 model gains roughly 10% accuracy on MMMU when its image is replaced by a caption. The gain is essentially the same whether the caption is written by the model itself (<code>self_caption</code>) or by an external captioner (<code>injected_caption</code>; InternVL3-14B) &mdash; the within-row difference between the two Δ columns is at most 2.4%. This rules out the obvious explanation that InternVL3.5 simply has a better captioner: even its own descriptions of the image produce the same lift. The bottleneck is not captioning quality; it is how the model uses visual evidence for multi-step reasoning. Given the same content in text form, the language side of the model handles it noticeably better than the visual side.</p>
+<p>Every InternVL3.5 model gains roughly 10% accuracy on MMMU when its image is replaced by a caption. The gain is essentially the same whether the caption is written by the model itself (<code>self_caption</code>) or by an external captioner (<code>injected_caption</code>; InternVL3-14B), as the within-row difference between the two Δ columns is at most 2.4%. This suggests that on MMMU, the bottleneck is not captioning quality. Instead, it is how the model uses visual evidence for multi-step reasoning. Given the same content in text form, the language side of the InternVL3.5 models handles it noticeably better than the visual side.</p>
 
-<p>Qwen3-VL shows the mirror image. Every Qwen3-VL model scores 2&ndash;4 points lower under either caption source, suggesting its visual pathway is doing real work on MMMU that captions cannot replace. The InternVL3 family is split: the 1B model sits near zero, while the 14B patterns with Qwen3-VL (about 4 points lower under either caption).</p>
+<p>Qwen3-VL shows the mirror image. Every Qwen3-VL model scores 2&ndash;4% lower under either caption source, suggesting its visual pathway is necessary for MMMU questions that captions cannot replace. </p>
 
 <h3 id="sec5-4">5.4 &nbsp;Null-Image Bias is small but rarely zero</h3>
 
@@ -1098,20 +1099,24 @@ Practical judge-trust recipe — for every (model, dataset, mode) cell, log: loc
 <!-- ════════════════════════ §6 ════════════════════════ -->
 <h2 id="sec6"><span class="num">6</span>Discussion</h2>
 
-<p>Aggregated over benchmarks, our four metrics suggests that accuracy on a multimodal benchmark does not directly mean there&rsquo;s evidence of multimodal reasoning. The whole point of separating Image Contribution from Caption Substitution in §4 was to stop treating a high score as self-explanatory and instead ask what produced it. Several widely used benchmarks turn out to be answerable from priors or from a short caption alone, which means a leaderboard climb on them can come entirely from a stronger language backbone. In terms of those tasks where images do contribute, the kind of contribution is not uniform: text-transcribable tasks give most of it back through a caption, while relational and spatial tasks do not. How &ldquo;visual&rdquo; the VQA benchmarks are is therefore a two-fold question: whether the image matters at all, and whether a caption substitude can &hellip;</p>
+<p>Aggregated over benchmarks, our four metrics suggests that accuracy on a multimodal benchmark does not directly mean there&rsquo;s evidence of multimodal reasoning. The whole point of separating Image Contribution from Caption Substitution in §4 was to stop treating a high score as self-explanatory and instead ask what produced it. Several widely used VQA benchmarks turn out to be answerable from priors or from a short caption alone, which means a leaderboard climb on them can come entirely from a stronger language backbone. In terms of those tasks where images do contribute, the kind of contribution is not uniform: text-transcribable tasks give most of it back through a caption, while relational and spatial tasks do not. How &ldquo;visual&rdquo; the VQA benchmarks are is therefore a two-fold question: whether the image matters at all, and whether a caption can substitute for it.</p>
 
-<p>Across models, the same metrics say that how a VLM uses its eyes is a property of its lineage more than its size. Dependence on the image <em>falls</em> as models grow, because a larger backbone answers more from memory, and the image-versus-caption lean splits cleanly by family rather than by parameter count. The sharpest cases, where a model reasons better over a description of its image than over the image itself, suggests the weakness specifically in how the vision input feeds downstream reasoning. We hypothesis the reason behind that when VLMs perform much better from a caption than from the original image, is that the backbone LLM and their vision capabilities fail to connect. In these cases, canonical metrics may not well evaluate their vision capabilities as the benchmarks were intended to.</p>
+<p>How VLMs use their vision-encoders more of a matter of architecture and pre-training than their scale. Dependence on the image decreases as models grow as a larger backbone LLM answers more from memory, and the image-vs-caption lean splits by family rather than by parameter count. In cases where a model reasons better over a caption than over the image itself, suggests the weakness may take place in how the vision input supports downstream reasoning. We hypothesis the reason behind this is that the backbone LLM and their vision capabilities fail to connect. In these cases, canonical metrics may not well evaluate their vision capabilities as the benchmarks were intended to.</p>
 
 <hr class="rule">
 
 <!-- ════════════════════════ §7 ════════════════════════ -->
 <h2 id="sec7"><span class="num">7</span>Related Work</h2>
 
-<p>Replacing an image with a text description and handing it to a language model has a long history in visual question answering. Caption-then-answer pipelines such as <a href="https://arxiv.org/abs/2109.05014">PICa</a> and <a href="https://arxiv.org/abs/2212.10846">Img2LLM</a> showed that a strong text-only LLM, fed a generated caption, is already competitive on VQA without end-to-end vision&ndash;language training. We revisit that substitution not as a method but as a <em>diagnostic</em>: rather than asking whether a caption pipeline can match a VLM, we ask, per instance, how much of a VLM&rsquo;s own accuracy survives when its image is swapped for a caption.</p>
+<p>Replacing an image with a text description and handing it to a language model is studied by many previous work. We hope to identify them here to the best of our knowledge and hope this post can be used as a pointer to related topics.</p>
 
-<p>A parallel line of work audits whether multimodal benchmarks actually require the image. <a href="https://arxiv.org/abs/2403.20330">MMStar</a> found that a large fraction of items across six popular benchmarks are answerable with no visual input and proposed cleaner splits; <a href="https://arxiv.org/abs/2404.01266">IsoBench</a> showed that, given isomorphic image/text representations of the same problem, VLMs systematically score higher from the text form; and <a href="https://arxiv.org/abs/2409.02813">MMMU-Pro</a> hardened MMMU by filtering out the text-solvable subset and adding harder distractors. These audits largely operate at the dataset level &mdash; flagging or removing leaky items. Our metrics complement them at the level of the individual (model, instance) cell: Modality Differential, Caption Substitution, Visual Dependence, and Null-Image Bias quantify not only whether an item is image-dependent, but how a <em>particular</em> model treats the image relative to a caption or to no visual input at all.</p>
+<p>Caption-then-answer pipelines such as <a href="https://arxiv.org/abs/2109.05014">PICa</a> and <a href="https://arxiv.org/abs/2212.10846">Img2LLM</a> showed that a strong text-only LLM fed with a generated caption, is already competitive on VQA without end-to-end vision&ndash;language training. We revisit that substitution diagnosticly: rather than asking whether a caption pipeline can match a VLM, we ask, per instance, how much of a VLM&rsquo;s own accuracy survives when its image is swapped for a caption.</p>
 
-<p>Closest in spirit, <a href="https://arxiv.org/abs/2603.21687">MIRAGE</a> showed that frontier models will generate detailed image descriptions and confident answers even when no image is provided, topping a chest-X-ray QA benchmark blind. Our null-input controls (no-image, blank-white, and random-noise) and the Null-Image Bias metric are designed to surface exactly this behavior in open-weight VLMs and to separate it from genuine visual gain. Where prior audits ask &ldquo;is this benchmark visual?&rdquo;, we add &ldquo;is this <em>model</em> visual, and on which inputs?&rdquo; &mdash; turning the image-vs-caption comparison into a per-instance, scale-free diagnostic.</p>
+<p>A parallel line of work audits whether multimodal benchmarks actually require the image. <a href="https://arxiv.org/abs/2403.20330">MMStar</a> found that a large fraction of items across six popular benchmarks are answerable with no visual input and proposed cleaner splits; <a href="https://arxiv.org/abs/2404.01266">IsoBench</a> showed that, given isomorphic image/text representations of the same problem, VLMs systematically score higher from the text form; and <a href="https://arxiv.org/abs/2409.02813">MMMU-Pro</a> hardened MMMU by filtering out the text-solvable subset and adding harder distractors. More directly, <a href="https://arxiv.org/abs/2605.22903">Lan et al.</a> ask whether VLM benchmarks test vision at all: they find that hiding most of an image&rsquo;s tokens barely hurts accuracy. </p>
+
+<p>A complementary line probes how VLMs weigh modalities internally. <a href="https://arxiv.org/abs/2603.09095">Sun et al.</a> show that the same text rendered as an image suppresses step-by-step reasoning. Models emit far shorter answers and skip computation, which helps explain why several of our models reason <em>better</em> from a caption than from the image itself. <a href="https://arxiv.org/abs/2507.01790">Hua et al.</a> show that when image and text disagree, VLMs systematically favor one modality, traced to specific &ldquo;router&rdquo; attention heads. </p>
+
+<p>Closest in spirit, <a href="https://arxiv.org/abs/2603.21687">MIRAGE</a> showed that frontier models will generate detailed image descriptions and confident answers even when no image is provided, topping a chest-X-ray QA benchmark blind. Our null-input controls (no-image, blank-white, and random-noise) and the Null-Image Bias metric are designed to surface exactly this behavior in open-weight VLMs and to separate it from genuine visual gain.</p>
 
 <hr class="rule">
 
@@ -1133,7 +1138,7 @@ Practical judge-trust recipe — for every (model, dataset, mode) cell, log: loc
 </main>
 
 <footer class="site">
-  <p><em>Comments and corrections welcome &mdash; reach out to the authors.</em></p>
+  <p><em>All comments and corrections are appreciated. Please reach out to the authors at </em> <code>harveyfu@uchicago.edu</code>.</p>
 </footer>
 
 <script>
